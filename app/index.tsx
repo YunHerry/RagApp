@@ -4,9 +4,10 @@ import { Text } from '@/components/ui/text';
 import { Link, Stack } from 'expo-router';
 import { MoonStarIcon, StarIcon, SunIcon } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
-import * as React from 'react';
+import { useContext } from 'react';
 import { Image, type ImageStyle, View } from 'react-native';
 import { Drawer } from 'react-native-drawer-layout';
+import { DrawerContext } from './_layout';
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
   dark: require('@/assets/images/react-native-reusables-dark.png'),
@@ -25,7 +26,7 @@ const IMAGE_STYLE: ImageStyle = {
 
 export default function Screen() {
   const { colorScheme } = useColorScheme();
-  const [open, setOpen] = React.useState(false);
+  const {isOpen, setOpen} = useContext(DrawerContext)
   return (
     <>
 
