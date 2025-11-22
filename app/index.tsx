@@ -14,10 +14,7 @@ import {
 import { useColorScheme } from 'nativewind';
 import { useContext } from 'react';
 import { Image, type ImageStyle, View } from 'react-native';
-import { Drawer } from 'react-native-drawer-layout';
-import { DrawerContext } from './_layout';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { ExtendedStackNavigationOptions } from 'expo-router/build/layouts/StackClient';
+import { Header } from '@/components/header';
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
   dark: require('@/assets/images/react-native-reusables-dark.png'),
@@ -28,43 +25,14 @@ const IMAGE_STYLE: ImageStyle = {
   width: 76,
 };
 
-const header = () => {
-  const { isOpen, setOpen } = useContext(DrawerContext);
-  const insets = useSafeAreaInsets();
-  return (
-    <View
-      className="flex flex-row items-center justify-between"
-      style={{
-        paddingTop: insets.top + 4,
-        paddingLeft: insets.left + 4,
-        paddingRight: insets.right + 4,
-      }}>
-      <Button variant="ghost" size="icon" onPress={() => setOpen(true)}>
-        <Icon as={LayoutList} size={24} />
-      </Button>
-      <Text className="text-lg font-bold">test</Text>
-      <Button variant="ghost" size="icon">
-        <Icon as={MessageSquarePlus} size={24} />
-      </Button>
-    </View>
-  );
-};
 
 export default function Screen() {
   const { colorScheme } = useColorScheme();
-  const { isOpen, setOpen } = useContext(DrawerContext);
-  const insets = useSafeAreaInsets();
-  const SCREEN_OPTIONS: ExtendedStackNavigationOptions = {
-    title: 'React Native Reusables',
-
-    headerRight: () => <ThemeToggle />,
-  };
-
   return (
     <>
       <Stack.Screen
         options={{
-          header,
+          header: () => <Header />
         }}
       />
       <View className="flex-1 items-center justify-center gap-8 p-4">
