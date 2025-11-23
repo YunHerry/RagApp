@@ -15,6 +15,8 @@ import { useColorScheme } from 'nativewind';
 import { useContext } from 'react';
 import { Image, type ImageStyle, View } from 'react-native';
 import { Header } from '@/components/header';
+import { Input } from '@/components/ui/input';
+import { ScrollView } from 'react-native-gesture-handler';
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
   dark: require('@/assets/images/react-native-reusables-dark.png'),
@@ -25,40 +27,43 @@ const IMAGE_STYLE: ImageStyle = {
   width: 76,
 };
 
-
 export default function Screen() {
   const { colorScheme } = useColorScheme();
   return (
     <>
       <Stack.Screen
         options={{
-          header: () => <Header />
+          header: () => <Header />,
+          contentStyle: { flex: 1 },
         }}
       />
-      <View className="flex-1 items-center justify-center gap-8 p-4">
+
+      <ScrollView
+        className="flex-1"
+        contentContainerClassName="flex-1 justify-center items-center gap-8 p-4">
         <Image source={LOGO[colorScheme ?? 'light']} style={IMAGE_STYLE} resizeMode="contain" />
         <View className="gap-2 p-4">
           <Text className="ios:text-foreground font-mono text-sm text-muted-foreground">
-            1. Edit <Text variant="code">app/index.tsx</Text> to get started.
-          </Text>
-          <Text className="ios:text-foreground font-mono text-sm text-muted-foreground">
-            2. Save to see your changes instantly.
+            我能够帮你整合各种数据,形成自己的知识库
           </Text>
         </View>
-        <View className="flex-row gap-2">
-          <Button>
-            <Text>Browse the Docs</Text>
-          </Button>
-          {/* <Button variant="ghost" onPress={() => setOpen(true)}>
-              <Text>Star the Repo</Text>
-              <Icon as={StarIcon} />
-            </Button> */}
-        </View>
+      </ScrollView>
+
+      <View className="w-full flex-col gap-4 border-t border-border px-4 py-4">
+        <Input
+          multiline
+          numberOfLines={4}
+          className="h-24 py-3"
+          textAlignVertical="top"
+          placeholder="请输入内容"
+        />
+        <Button>
+          <Text>发送</Text>
+        </Button>
       </View>
     </>
   );
 }
-
 const THEME_ICONS = {
   light: SunIcon,
   dark: MoonStarIcon,
