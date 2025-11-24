@@ -24,7 +24,7 @@ import { ChatSession } from '@/lib/types/chatSession';
 import { setStorage, getStorage } from '@/lib/localStorage';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 export const DrawerContext = createContext<any>(null);
-export const ChatInfoContext = createContext<ChatSession | null>(null);
+export const ChatInfoContext = createContext<any>(null);
 function DrawerContent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const insets = useSafeAreaInsets();
@@ -49,7 +49,7 @@ function DrawerContent() {
             className={classNames('rounded-lg p-4 active:bg-orange-400', {
               'bg-orange-400': isMenuOpen,
             })}>
-            <Text>点击打开,长按显示菜单</Text>
+            <Text>命名</Text>
           </Pressable>
         </ContextMenuTrigger>
 
@@ -69,14 +69,17 @@ export default function RootLayout() {
   const { colorScheme } = useColorScheme();
   const [isOpen, setOpen] = useState(true);
   const [chatList, setChatList] = useState([]);
+  const [chatSession,setChatSession] = useState<ChatSession|null>(null);
   useEffect(() => {
     getStorage('chatList').then(setChatList);
+    
   }, []);
   return (
     <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
       <SafeAreaProvider>
         <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-        <DrawerContext.Provider value={{ isOpen, setOpen }}>
+        <ChatInfoContext.Provider value={{chatSession,setChatSession}}>
+          <DrawerContext.Provider value={{ isOpen, setOpen,setChatList,chatList }}>
           <Drawer
             drawerStyle={{ height: SCREEN_HEIGHT }}
             open={isOpen}
@@ -90,6 +93,7 @@ export default function RootLayout() {
           </Drawer>
           <PortalHost />
         </DrawerContext.Provider>
+        </ChatInfoContext.Provider>
       </SafeAreaProvider>
     </ThemeProvider>
   );

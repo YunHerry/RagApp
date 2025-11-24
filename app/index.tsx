@@ -1,22 +1,18 @@
 import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
-import { Link, Stack } from 'expo-router';
+import { Stack } from 'expo-router';
 import {
-  ChevronRight,
-  LayoutList,
-  MessageSquare,
-  MessageSquarePlus,
   MoonStarIcon,
-  StarIcon,
   SunIcon,
 } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
-import { useContext } from 'react';
-import { Image, type ImageStyle, View } from 'react-native';
+import { useContext, useRef, useState } from 'react';
+import { Image, type ImageStyle, TextInput, View } from 'react-native';
 import { Header } from '@/components/header';
 import { Input } from '@/components/ui/input';
 import { ScrollView } from 'react-native-gesture-handler';
+import { ChatInfoContext, DrawerContext } from './_layout';
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
   dark: require('@/assets/images/react-native-reusables-dark.png'),
@@ -29,6 +25,11 @@ const IMAGE_STYLE: ImageStyle = {
 
 export default function Screen() {
   const { colorScheme } = useColorScheme();
+  const { setChatList, chatList } = useContext(DrawerContext);
+  const { setChatSession, chatSession } = useContext(ChatInfoContext);
+  const inputRef = useRef<TextInput | null>(null);
+  const inputValueRef = useRef('');
+
   return (
     <>
       <Stack.Screen
@@ -41,12 +42,16 @@ export default function Screen() {
       <ScrollView
         className="flex-1"
         contentContainerClassName="flex-1 justify-center items-center gap-8 p-4">
-        <Image source={LOGO[colorScheme ?? 'light']} style={IMAGE_STYLE} resizeMode="contain" />
-        <View className="gap-2 p-4">
-          <Text className="ios:text-foreground font-mono text-sm text-muted-foreground">
-            我能够帮你整合各种数据,形成自己的知识库
-          </Text>
-        </View>
+        {!chatSession ? (
+          <>
+            <Image source={LOGO[colorScheme ?? 'light']} style={IMAGE_STYLE} resizeMode="contain" />
+            <View className="gap-2 p-4">
+              <Text className="ios:text-foreground font-mono text-sm text-muted-foreground">
+                我能够帮你整合各种数据,形成自己的知识库
+              </Text>
+            </View>
+          </>
+        ) : null}
       </ScrollView>
 
       <View className="w-full flex-col gap-4 border-t border-border px-4 py-4">
@@ -56,8 +61,18 @@ export default function Screen() {
           className="h-24 py-3"
           textAlignVertical="top"
           placeholder="请输入内容"
+          ref={inputRef}
+          onChangeText={(text) => {
+            inputValueRef.current = text;
+          }}
         />
-        <Button>
+        <Button
+          onPress={() => {
+            if (!inputValueRef.current.length) return;
+            //发送后存储消息,失败回退
+            inputValueRef.current = '';
+            inputRef.current?.clear();
+          }}>
           <Text>发送</Text>
         </Button>
       </View>

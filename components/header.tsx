@@ -1,13 +1,14 @@
-import { DrawerContext } from "@/app/_layout";
-import { LayoutList, MessageSquarePlus } from "lucide-react-native";
-import { useContext } from "react";
+import { ChatInfoContext, DrawerContext } from '@/app/_layout';
+import { LayoutList, MessageSquarePlus } from 'lucide-react-native';
+import { useContext } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
-import { View } from "react-native";
+import { View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
 export const Header = () => {
   const { isOpen, setOpen } = useContext(DrawerContext);
+  const { setChatSession, chatSession } = useContext(ChatInfoContext);
   const insets = useSafeAreaInsets();
   return (
     <View
@@ -20,8 +21,8 @@ export const Header = () => {
       <Button variant="ghost" size="icon" onPress={() => setOpen(true)}>
         <Icon as={LayoutList} size={24} />
       </Button>
-      <Text className="text-lg font-bold">test</Text>
-      <Button variant="ghost" size="icon">
+      <Text className="text-lg font-bold">{!chatSession ? '新对话' : chatSession.sessionName}</Text>
+      <Button variant="ghost" size="icon" onPress={() => setChatSession(null)}>
         <Icon as={MessageSquarePlus} size={24} />
       </Button>
     </View>
