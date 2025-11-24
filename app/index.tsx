@@ -11,6 +11,7 @@ import { Input } from '@/components/ui/input';
 import { ScrollView } from 'react-native-gesture-handler';
 import { ChatInfoContext, DrawerContext } from './_layout';
 import { ChatSession } from '@/lib/types/chatSession';
+import { SafeAreaView } from 'react-native-safe-area-context';
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
   dark: require('@/assets/images/react-native-reusables-dark.png'),
@@ -29,7 +30,9 @@ export default function Screen() {
   const inputValueRef = useRef('');
 
   return (
-    <>
+    <SafeAreaView 
+    style={{ flex: 1 }}
+    edges={['bottom']}>
       <Stack.Screen
         options={{
           header: () => <Header />,
@@ -89,7 +92,7 @@ export default function Screen() {
           <Text>发送</Text>
         </Button>
       </View>
-    </>
+    </SafeAreaView>
   );
 }
 const THEME_ICONS = {
