@@ -7,7 +7,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { Drawer } from 'react-native-drawer-layout';
-import { createContext, useContext, useState } from 'react';
+import { createContext, useContext, useEffect, useState } from 'react';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import { Dimensions, Pressable, SafeAreaViewBase, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -20,8 +20,11 @@ import {
 } from '@/components/ui/context-menu';
 import { Button } from '@/components/ui/button';
 import classNames from 'classnames';
+import { ChatSession } from '@/lib/types/chatSession';
+import { setStorage, getStorage } from '@/lib/localStorage';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 export const DrawerContext = createContext<any>(null);
+export const ChatInfoContext = createContext<ChatSession | null>(null);
 function DrawerContent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const insets = useSafeAreaInsets();
@@ -31,10 +34,10 @@ function DrawerContent() {
       style={{
         paddingTop: insets.top + 20,
         paddingLeft: insets.left + 20,
-        paddingRight: 20
+        paddingRight: 20,
       }}
       className="h-full">
-      <Text className="text-sm text-gray-400 mb-4">七天内</Text>
+      <Text className="mb-4 text-sm text-gray-400">七天内</Text>
       <ContextMenu onOpenChange={setIsMenuOpen}>
         <ContextMenuTrigger asChild>
           <Pressable
@@ -65,7 +68,10 @@ function DrawerContent() {
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
   const [isOpen, setOpen] = useState(true);
-
+  const [chatList, setChatList] = useState([]);
+  useEffect(() => {
+    getStorage('chatList').then(setChatList);
+  }, []);
   return (
     <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
       <SafeAreaProvider>
