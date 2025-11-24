@@ -2,10 +2,7 @@ import { Button } from '@/components/ui/button';
 import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Stack } from 'expo-router';
-import {
-  MoonStarIcon,
-  SunIcon,
-} from 'lucide-react-native';
+import { MoonStarIcon, SunIcon } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import { useContext, useRef, useState } from 'react';
 import { Image, type ImageStyle, TextInput, View } from 'react-native';
@@ -13,6 +10,7 @@ import { Header } from '@/components/header';
 import { Input } from '@/components/ui/input';
 import { ScrollView } from 'react-native-gesture-handler';
 import { ChatInfoContext, DrawerContext } from './_layout';
+import { ChatSession } from '@/lib/types/chatSession';
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
   dark: require('@/assets/images/react-native-reusables-dark.png'),
@@ -70,6 +68,21 @@ export default function Screen() {
           onPress={() => {
             if (!inputValueRef.current.length) return;
             //发送后存储消息,失败回退
+            console.log(chatSession)
+            if (!chatSession) {
+              const session = {
+                sessionId: Date.now().toString(36) + Math.random().toString(36).substring(2),
+                sessionName:
+                  inputValueRef.current.length > 5
+                    ? inputValueRef.current.substring(0, 5) + '...'
+                    : inputValueRef.current,
+                createTime: new Date(),
+                lastChat: new Date(),
+              }
+              setChatSession(session);
+              console.log(session,chatList)
+              setChatList([...(chatList || []), session]);
+            }
             inputValueRef.current = '';
             inputRef.current?.clear();
           }}>
