@@ -12,6 +12,7 @@ import { ScrollView } from 'react-native-gesture-handler';
 import { ChatInfoContext, DrawerContext } from './_layout';
 import { ChatSession } from '@/lib/types/chatSession';
 import { SafeAreaView } from 'react-native-safe-area-context';
+import { setStorage } from '@/lib/localStorage';
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
   dark: require('@/assets/images/react-native-reusables-dark.png'),
@@ -30,9 +31,7 @@ export default function Screen() {
   const inputValueRef = useRef('');
 
   return (
-    <SafeAreaView 
-    style={{ flex: 1 }}
-    edges={['bottom']}>
+    <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
       <Stack.Screen
         options={{
           header: () => <Header />,
@@ -71,7 +70,6 @@ export default function Screen() {
           onPress={() => {
             if (!inputValueRef.current.length) return;
             //发送后存储消息,失败回退
-            console.log(chatSession)
             if (!chatSession) {
               const session = {
                 sessionId: Date.now().toString(36) + Math.random().toString(36).substring(2),
@@ -81,11 +79,13 @@ export default function Screen() {
                     : inputValueRef.current,
                 createTime: new Date(),
                 lastChat: new Date(),
-              }
+              };
               setChatSession(session);
-              console.log(session,chatList)
               setChatList([...(chatList || []), session]);
+            } else {
+              chatSession.lastChat = new Date();
             }
+
             inputValueRef.current = '';
             inputRef.current?.clear();
           }}>
