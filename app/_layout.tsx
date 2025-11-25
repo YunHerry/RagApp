@@ -7,7 +7,7 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { Drawer } from 'react-native-drawer-layout';
-import { createContext, useContext, useEffect, useState } from 'react';
+import { createContext, useContext, useEffect, useRef, useState } from 'react';
 import { toast } from 'sonner-native';
 import { Dimensions, Pressable, SafeAreaViewBase, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
@@ -18,20 +18,36 @@ import {
   ContextMenuItem,
   ContextMenuTrigger,
 } from '@/components/ui/context-menu';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { Toaster } from 'sonner-native';
 import classNames from 'classnames';
 import { ChatSession } from '@/lib/types/chatSession';
 import { setStorage, getStorage } from '@/lib/localStorage';
 import { PencilLine, Trash } from 'lucide-react-native';
-import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler';
+import { Input } from '@/components/ui/input';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 export const DrawerContext = createContext<any>(null);
 export const ChatInfoContext = createContext<any>(null);
+// export const
 function DrawerContent() {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
   const insets = useSafeAreaInsets();
   const { isOpen, setOpen, chatList, setChatList } = useContext(DrawerContext);
   const { setChatSession, chatSession } = useContext(ChatInfoContext);
+  const [isRenameOpen, setRenameOpen] = useState(false);
+  const renameInputRef = useRef<TextInput | null>(null);
+  const renameInput = useRef('');
+  const renameItemId = useRef<null | string>(null);
   return (
     <View
       style={{
@@ -41,6 +57,49 @@ function DrawerContent() {
       }}
       className="h-full">
       <Text className="mb-4 text-sm text-gray-400">七天内</Text>
+      <AlertDialog open={isRenameOpen}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>重命名对话</AlertDialogTitle>
+            <AlertDialogDescription>
+              <Input
+                onChangeText={(text) => {
+                  renameInput.current = text;
+                }}
+                ref={renameInputRef}></Input>
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel
+              onPress={() => {
+                setRenameOpen(false);
+                renameInputRef.current?.clear();
+                renameItemId.current = null;
+              }}>
+              <Text>取消</Text>
+            </AlertDialogCancel>
+            <AlertDialogAction
+              onPress={() => {
+                setChatList(
+                  chatList.map((session: ChatSession) =>
+                    renameItemId.current == session.sessionId
+                      ? { ...session, sessionName: renameInput.current }
+                      : session
+                  )
+                );
+                if (renameItemId.current == chatSession?.sessionId) {
+                  setChatSession({ ...chatSession, sessionName: renameInput.current });
+                }
+
+                setRenameOpen(false);
+                renameInputRef.current?.clear();
+                renameItemId.current = null;
+              }}>
+              <Text>重命名</Text>
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
       {chatList?.map((item: ChatSession) => {
         return (
           <ContextMenu key={item.sessionId} onOpenChange={setIsMenuOpen}>
@@ -62,19 +121,17 @@ function DrawerContent() {
             <ContextMenuContent>
               <ContextMenuItem
                 onPress={() => {
-                  chatList.map((chatSession: ChatSession) =>
-                    chatSession.sessionId === item.sessionId ? { ...item, sessionName: '' } : item
-                  );
+                  setRenameOpen(true);
+                  renameItemId.current = item.sessionId;
                 }}>
                 <PencilLine size={20} />
                 <Text>重命名</Text>
-                
               </ContextMenuItem>
               <ContextMenuItem
                 onPress={() => {
                   setChatList(
                     chatList.filter(
-                      (chatSession: ChatSession) => chatSession.sessionId != item.sessionId
+                      (chatSession: ChatSession) => item.sessionId != chatSession.sessionId
                     )
                   );
                 }}>

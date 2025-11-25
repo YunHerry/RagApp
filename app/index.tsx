@@ -73,11 +73,7 @@ export default function Screen() {
             if (!chatSession) {
               const session = {
                 sessionId: Date.now().toString(36) + Math.random().toString(36).substring(2),
-                sessionName:
-                  inputValueRef.current.length > 5
-                    ? inputValueRef.current.substring(0, 5) + '...'
-                    : inputValueRef.current,
-                createTime: new Date(),
+                sessionName: inputValueRef.current,
                 lastChat: new Date(),
               };
               setChatSession(session);
