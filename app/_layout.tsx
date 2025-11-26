@@ -177,7 +177,7 @@ function DrawerContent() {
 }
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
-  const [isOpen, setOpen] = useState(true);
+  const [isOpen, setOpen] = useState(false);
   const [chatList, setChatList] = useState([]);
   const [chatSession, setChatSession] = useState<ChatSession | null>(null);
   useEffect(() => {
