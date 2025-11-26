@@ -7,9 +7,9 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { Drawer } from 'react-native-drawer-layout';
-import { createContext, useContext, useEffect, useRef, useState } from 'react';
+import { createContext, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { toast } from 'sonner-native';
-import { Dimensions, Pressable, SafeAreaViewBase, View } from 'react-native';
+import { Dimensions, Pressable, SafeAreaViewBase, SectionList, View } from 'react-native';
 import { SafeAreaProvider, SafeAreaView, useSafeAreaInsets } from 'react-native-safe-area-context';
 export { ErrorBoundary } from 'expo-router';
 import {
@@ -35,12 +35,12 @@ import { setStorage, getStorage } from '@/lib/localStorage';
 import { PencilLine, Trash } from 'lucide-react-native';
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler';
 import { Input } from '@/components/ui/input';
+import { groupChatsByDate, GroupedChats } from '@/lib/utils';
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 export const DrawerContext = createContext<any>(null);
 export const ChatInfoContext = createContext<any>(null);
-// export const
 function DrawerContent() {
-  const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const { isOpen, setOpen, chatList, setChatList } = useContext(DrawerContext);
   const { setChatSession, chatSession } = useContext(ChatInfoContext);
@@ -48,6 +48,9 @@ function DrawerContent() {
   const renameInputRef = useRef<TextInput | null>(null);
   const renameInput = useRef('');
   const renameItemId = useRef<null | string>(null);
+  const groupedChats = useMemo(() => {
+    return groupChatsByDate(chatList || []);
+  }, [chatList]);
   return (
     <View
       style={{
@@ -56,7 +59,6 @@ function DrawerContent() {
         paddingRight: 20,
       }}
       className="h-full">
-      <Text className="mb-4 text-sm text-gray-400">七天内</Text>
       <AlertDialog open={isRenameOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -100,48 +102,76 @@ function DrawerContent() {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-      {chatList?.map((item: ChatSession) => {
-        return (
-          <ContextMenu key={item.sessionId} onOpenChange={setIsMenuOpen}>
-            <ContextMenuTrigger asChild>
-              <Pressable
-                onPress={() => {
-                  console.log('点击执行操作');
-                  setOpen(false);
-                  setChatSession(item);
-                }}
-                bg-orange-400
-                className={classNames('rounded-lg p-4 active:bg-gray-200/50', {
-                  'bg-gray-200/50': isMenuOpen || chatSession?.sessionId == item?.sessionId,
-                })}>
-                <Text>{item.sessionName}</Text>
-              </Pressable>
-            </ContextMenuTrigger>
 
-            <ContextMenuContent>
-              <ContextMenuItem
-                onPress={() => {
-                  setRenameOpen(true);
-                  renameItemId.current = item.sessionId;
-                }}>
-                <PencilLine size={20} />
-                <Text>重命名</Text>
-              </ContextMenuItem>
-              <ContextMenuItem
-                onPress={() => {
-                  setChatList(
-                    chatList.filter(
-                      (chatSession: ChatSession) => item.sessionId != chatSession.sessionId
-                    )
-                  );
-                }}>
-                <Trash color="#dc2626" size={20} />
-                <Text className="text-red-600">删除</Text>
-              </ContextMenuItem>
-            </ContextMenuContent>
-          </ContextMenu>
-        );
-      })}
+      {groupedChats.length === 0 ? (
+        // 空状态
+        <View className="flex-1 items-center justify-center">
+          <Text className="text-base text-gray-400">暂无对话</Text>
+          <Text className="mt-2 text-xs text-gray-300">开始新的对话吧</Text>
+        </View>
+      ) : (
+        <SectionList
+          sections={groupedChats}
+          keyExtractor={(item) => item.sessionId}
+          renderSectionHeader={({ section }) => (
+            <Text className="mb-2 mt-2 text-sm text-gray-400">{section.title}</Text>
+          )}
+          renderItem={({ item }) => (
+            <ContextMenu
+              key={item.sessionId}
+              onOpenChange={(open) => {
+                setOpenMenuId(open ? item.sessionId : null);
+              }}>
+              <ContextMenuTrigger asChild>
+                <Pressable
+                  onPress={() => {
+                    setOpen(false);
+                    setChatSession(item);
+                  }}
+                  className={classNames('rounded-lg p-4 active:bg-gray-200/50', {
+                    'bg-gray-200/50':
+                      openMenuId === item.sessionId || chatSession?.sessionId === item?.sessionId,
+                  })}>
+                  <Text>{item.sessionName}</Text>
+                </Pressable>
+              </ContextMenuTrigger>
+
+              <ContextMenuContent>
+                <ContextMenuItem
+                  onPress={() => {
+                    setRenameOpen(true);
+                    renameItemId.current = item.sessionId;
+                  }}>
+                  <PencilLine size={20} />
+                  <Text>重命名</Text>
+                </ContextMenuItem>
+
+                <ContextMenuItem
+                  onPress={() => {
+                    if (chatSession?.sessionId === item.sessionId) {
+                      setChatSession(null);
+                    }
+                    setChatList(
+                      chatList.filter(
+                        (session: ChatSession) => item.sessionId !== session.sessionId
+                      )
+                    );
+                  }}>
+                  <Trash color="#dc2626" size={20} />
+                  <Text className="text-red-600">删除</Text>
+                </ContextMenuItem>
+              </ContextMenuContent>
+            </ContextMenu>
+          )}
+          ListEmptyComponent={
+            <View className="flex-1 items-center justify-center py-20">
+              <Text className="text-gray-400">暂无对话</Text>
+            </View>
+          }
+          showsVerticalScrollIndicator={false}
+          stickySectionHeadersEnabled={false}
+        />
+      )}
     </View>
   );
 }
@@ -156,9 +186,9 @@ export default function RootLayout() {
     });
   }, []);
   useEffect(() => {
-    setStorage('chatList', chatList)
-      .then(() => toast('保存完成'))
-      .catch(() => toast('保存失败'));
+    setStorage('chatList', chatList);
+    // .then(() => toast('保存完成'))
+    // .catch(() => toast('保存失败'));
   }, [chatList]);
   return (
     <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
