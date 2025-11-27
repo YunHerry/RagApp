@@ -40,27 +40,10 @@ export default function Screen() {
       content: 'test',
     },
   ]);
+  const processedLengthRef = useRef(0);
+  //当前正在回复的消息
   const [message, setMessage] = useState('');
-  // const es = useRef<EventSource | null>(null);
-  useEffect(() => {
-    // es.current = new EventSource('https://api.ragapp.linc.work/test/chat');
-    // es.current.addEventListener('open', (event) => {
-    //   console.log('Open SSE connection.');
-    // });
-    // es.current.addEventListener('message', (event) => {
-    //   console.log('New message event:', event.data);
-    // });
-    // es.current.addEventListener('error', (event) => {
-    //   if (event.type === 'error') {
-    //     console.error('Connection error:', event.message);
-    //   } else if (event.type === 'exception') {
-    //     console.error('Error:', event.message, event.error);
-    //   }
-    // });
-    // es.current.addEventListener('close', (event) => {
-    //   console.log('Close SSE connection.');
-    // });
-  }, []);
+  const messageRef = useRef('');
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
       <Stack.Screen
@@ -84,10 +67,10 @@ export default function Screen() {
             <View
               key={index}
               className={classNames(
-                'relative max-w-[calc(100%-88px)] rounded-bl-[22px] rounded-br-[8px] rounded-tl-[22px] rounded-tr-[22px] px-4 py-2.5 text-[16px] leading-6',
+                'relative mb-6 max-w-[calc(100%-88px)] rounded-tl-[22px] rounded-tr-[22px] px-4 py-2.5 text-[16px] leading-6',
                 {
-                  'self-end bg-blue-200/50 text-white': item.role === 'user',
-                  'self-start bg-gray-200/50 text-[var(--dsw-alias-label-primary)]':
+                  'self-end bg-blue-200/50 text-white rounded-br-[8px] rounded-bl-[22px]': item.role === 'user',
+                  'self-start bg-gray-200/50 text-[var(--dsw-alias-label-primary)] rounded-br-[22px] rounded-bl-[8px]':
                     item.role !== 'user',
                 }
               )}>
@@ -129,22 +112,40 @@ export default function Screen() {
             axios.post(
               'https://api.ragapp.linc.work/test/chat',
               {
-                message: '介绍一下自己',
+                message: inputValueRef.current,
                 model: 'Qwen3-32B',
               },
               {
                 responseType: 'stream',
                 onDownloadProgress: (progressEvent) => {
                   const text = progressEvent.event.target.response;
-                  const lines = text.split('\n\n');
+
+                  const newText = text.slice(processedLengthRef.current);
+                  processedLengthRef.current = text.length;
+                  const lines = newText.split('\n\n');
                   for (const line of lines) {
                     if (line.startsWith('data: ')) {
                       const payload = line.replace('data: ', '').trim();
                       if (payload === '[DONE]') {
-                        console.log('结束');
-                      } else {
-                        const data = JSON.parse(payload);
-                        setMessage((prev) => prev + data.content);
+                        const fullContent = messageRef.current;
+                        setMessages((prev) => [
+                          ...prev,
+                          {
+                            role: 'assistant',
+                            content: fullContent,
+                          },
+                        ]);
+                        setMessage('');
+                        messageRef.current = '';
+                      } else if (payload) {
+                        try {
+                          const data = JSON.parse(payload);
+                          console.log(data.content);
+                          messageRef.current += data.content;
+                          setMessage((prev) => prev + data.content);
+                        } catch (e) {
+                          console.error('JSON parse error:', e);
+                        }
                       }
                     }
                   }
