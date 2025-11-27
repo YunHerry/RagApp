@@ -31,7 +31,7 @@ import {
 import { Toaster } from 'sonner-native';
 import classNames from 'classnames';
 import { ChatSession } from '@/lib/types/chatSession';
-import { setStorage, getStorage } from '@/lib/localStorage';
+import { setStorage, getStorage, removeStorage } from '@/lib/localStorage';
 import { PencilLine, Trash } from 'lucide-react-native';
 import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler';
 import { Input } from '@/components/ui/input';
@@ -156,6 +156,7 @@ function DrawerContent() {
                         (session: ChatSession) => item.sessionId !== session.sessionId
                       )
                     );
+                    removeStorage(item.sessionId);
                   }}>
                   <Trash color="#dc2626" size={20} />
                   <Text className="text-red-600">删除</Text>
@@ -182,7 +183,7 @@ export default function RootLayout() {
   const [chatSession, setChatSession] = useState<ChatSession | null>(null);
   useEffect(() => {
     getStorage('chatList').then((item) => {
-      setChatList(item);
+      setChatList(item || []);
     });
   }, []);
   useEffect(() => {

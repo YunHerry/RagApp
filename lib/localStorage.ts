@@ -1,4 +1,5 @@
 import AsyncStorage from '@react-native-async-storage/async-storage';
+import { toast } from 'sonner-native';
 
 /**
  * 存储数据
@@ -26,3 +27,14 @@ export async function getStorage<T = any>(
     return defaultValue ?? null;
   }
 }
+
+/**
+ * 删除数据
+ */
+export const removeStorage = async (key: string) => {
+  try {
+    await AsyncStorage.removeItem(key);
+  } catch (error) {
+    toast("删除失败!")
+  }
+};

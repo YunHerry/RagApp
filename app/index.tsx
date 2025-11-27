@@ -15,6 +15,7 @@ import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import classNames from 'classnames';
 import EventSource from 'react-native-sse';
+import { getStorage, setStorage } from '@/lib/localStorage';
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
   dark: require('@/assets/images/react-native-reusables-dark.png'),
@@ -34,16 +35,29 @@ export default function Screen() {
   const { setChatSession, chatSession } = useContext(ChatInfoContext);
   const inputRef = useRef<TextInput | null>(null);
   const inputValueRef = useRef('');
-  const [messages, setMessages] = useState<Message[]>([
-    {
-      role: 'user',
-      content: 'test',
-    },
-  ]);
+  const [messages, setMessages] = useState<Message[]>([]);
   const processedLengthRef = useRef(0);
+  const [isRequesting, setRequesting] = useState(false);
   //当前正在回复的消息
   const [message, setMessage] = useState('');
   const messageRef = useRef('');
+  useEffect(() => {
+    setMessages([]);
+    if (chatSession) {
+      getStorage(chatSession.sessionId).then((res) => {
+        setMessages(JSON.parse(res) || []);
+      });
+    }
+    processedLengthRef.current = 0;
+    setMessage('');
+    inputValueRef.current = '';
+  }, [chatSession]);
+  //存储数据
+  useEffect(() => {
+    if (chatSession) {
+      setStorage(chatSession?.sessionId, JSON.stringify(messages));
+    }
+  }, [messages]);
   return (
     <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
       <Stack.Screen
@@ -52,7 +66,7 @@ export default function Screen() {
           contentStyle: { flex: 1 },
         }}
       />
-      {!chatSession && messages.length > 0 ? (
+      {!(messages.length > 0) ? (
         <View className="flex-1 items-center justify-center gap-8 p-4">
           <Image source={LOGO[colorScheme ?? 'light']} style={IMAGE_STYLE} resizeMode="contain" />
           <View className="gap-2 p-4">
@@ -69,14 +83,20 @@ export default function Screen() {
               className={classNames(
                 'relative mb-6 max-w-[calc(100%-88px)] rounded-tl-[22px] rounded-tr-[22px] px-4 py-2.5 text-[16px] leading-6',
                 {
-                  'self-end bg-blue-200/50 text-white rounded-br-[8px] rounded-bl-[22px]': item.role === 'user',
-                  'self-start bg-gray-200/50 text-[var(--dsw-alias-label-primary)] rounded-br-[22px] rounded-bl-[8px]':
+                  'self-end rounded-bl-[22px] rounded-br-[8px] bg-blue-200/50 text-white':
+                    item.role === 'user',
+                  'self-start rounded-bl-[8px] rounded-br-[22px] bg-gray-200/50 text-[var(--dsw-alias-label-primary)]':
                     item.role !== 'user',
                 }
               )}>
               <Text>{item.content}</Text>
             </View>
           ))}
+          {isRequesting && (
+            <View className="h-1 w-full overflow-hidden rounded bg-gray-200">
+              <View className="h-full animate-pulse bg-blue-500" />
+            </View>
+          )}
           <View>
             <Text>{message}</Text>
           </View>
@@ -96,6 +116,7 @@ export default function Screen() {
         />
         <Button
           onPress={() => {
+            processedLengthRef.current = 0;
             if (!inputValueRef.current.length) return;
             //发送后存储消息,失败回退
             if (!chatSession) {
@@ -109,6 +130,14 @@ export default function Screen() {
             } else {
               chatSession.lastChat = new Date();
             }
+            setRequesting(true);
+            setMessages([
+              ...messages,
+              {
+                role: 'user',
+                content: inputValueRef.current,
+              },
+            ]);
             axios.post(
               'https://api.ragapp.linc.work/test/chat',
               {
@@ -137,6 +166,7 @@ export default function Screen() {
                         ]);
                         setMessage('');
                         messageRef.current = '';
+                        setRequesting(false);
                       } else if (payload) {
                         try {
                           const data = JSON.parse(payload);
