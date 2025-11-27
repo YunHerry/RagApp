@@ -10,11 +10,9 @@ import { Header } from '@/components/header';
 import { Input } from '@/components/ui/input';
 import { ScrollView } from 'react-native-gesture-handler';
 import { ChatInfoContext, DrawerContext } from './_layout';
-import { ChatSession } from '@/lib/types/chatSession';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import classNames from 'classnames';
-import EventSource from 'react-native-sse';
 import { getStorage, setStorage } from '@/lib/localStorage';
 import Markdown from 'react-native-markdown-display';
 import { Separator } from '@/components/ui/separator';
@@ -26,10 +24,6 @@ const LOGO = {
 const IMAGE_STYLE: ImageStyle = {
   height: 76,
   width: 76,
-};
-type Message = {
-  role: 'user' | 'tool' | 'system' | 'assistant';
-  content: string;
 };
 const createMarkdownRules = (isUser: boolean) => ({
   heading1: (node, children, parent, styles) => (
@@ -113,7 +107,6 @@ export default function Screen() {
         </View>
       ) : (
         <ScrollView className="flex-1" contentContainerClassName="p-6 px-8">
-          {console.log(messages)}
           {messages.map((item, index) => (
             <View
               key={index}
@@ -253,8 +246,4 @@ function ThemeToggle() {
       <Icon as={THEME_ICONS[colorScheme ?? 'light']} className="size-5" />
     </Button>
   );
-}
-function isUserType(type: string) {
-  switch (type) {
-  }
 }
