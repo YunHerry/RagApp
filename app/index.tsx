@@ -4,7 +4,7 @@ import { Text } from '@/components/ui/text';
 import { Stack } from 'expo-router';
 import { MoonStarIcon, SunIcon } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
-import { useContext, useEffect, useRef, useState } from 'react';
+import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Image, type ImageStyle, TextInput, View } from 'react-native';
 import { Header } from '@/components/header';
 import { Input } from '@/components/ui/input';
@@ -16,6 +16,8 @@ import axios from 'axios';
 import classNames from 'classnames';
 import EventSource from 'react-native-sse';
 import { getStorage, setStorage } from '@/lib/localStorage';
+import Markdown from 'react-native-markdown-display';
+import { Separator } from '@/components/ui/separator';
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
   dark: require('@/assets/images/react-native-reusables-dark.png'),
@@ -29,6 +31,40 @@ type Message = {
   role: 'user' | 'tool' | 'system' | 'assistant';
   content: string;
 };
+const createMarkdownRules = (isUser: boolean) => ({
+  heading1: (node, children, parent, styles) => (
+    <Text
+      key={node.key}
+      className={classNames('text-2xl font-bold', {
+        'text-white': isUser,
+        'text-gray-900': !isUser,
+      })}>
+      {children}
+    </Text>
+  ),
+
+  // 标题 h2
+  heading2: (node, children, parent, styles) => (
+    <Text
+      key={node.key}
+      className={classNames('text-xl font-bold', {
+        'text-white': isUser,
+        'text-gray-900': !isUser,
+      })}>
+      {children}
+    </Text>
+  ),
+
+  // 标题 h3
+  heading3: (node, children, parent, styles) => (
+    <Text key={node.key} variant="h3">
+      {children}
+    </Text>
+  ),
+
+  // 分割线
+  hr: (node, children, parent, styles) => <Separator key={node.key} className="my-4" />,
+});
 export default function Screen() {
   const { colorScheme } = useColorScheme();
   const { setChatList, chatList } = useContext(DrawerContext);
@@ -77,19 +113,27 @@ export default function Screen() {
         </View>
       ) : (
         <ScrollView className="flex-1" contentContainerClassName="p-6 px-8">
+          {console.log(messages)}
           {messages.map((item, index) => (
             <View
               key={index}
               className={classNames(
-                'relative mb-6 max-w-[calc(100%-88px)] rounded-tl-[22px] rounded-tr-[22px] px-4 py-2.5 text-[16px] leading-6',
+                'relative mb-6 max-w-[calc(100%-88px)] rounded-tl-[22px] rounded-tr-[22px] px-4 py-0.5 text-[16px] leading-6',
                 {
                   'self-end rounded-bl-[22px] rounded-br-[8px] bg-blue-200/50 text-white':
                     item.role === 'user',
-                  'self-start rounded-bl-[8px] rounded-br-[22px] bg-gray-200/50 text-[var(--dsw-alias-label-primary)]':
+                  'self-start rounded-bl-[8px] rounded-br-[22px] text-[var(--dsw-alias-label-primary)]':
                     item.role !== 'user',
                 }
               )}>
-              <Text>{item.content}</Text>
+              {/* <Text>{item.content}</Text> */}
+              <Markdown
+                style={{
+                  text: { fontSize: 18 },
+                }}
+                rules={createMarkdownRules(false)}>
+                {item.content}
+              </Markdown>
             </View>
           ))}
           {isRequesting && (
@@ -98,7 +142,7 @@ export default function Screen() {
             </View>
           )}
           <View>
-            <Text>{message}</Text>
+            <Markdown style={{}}>{message}</Markdown>
           </View>
         </ScrollView>
       )}
