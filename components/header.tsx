@@ -1,14 +1,14 @@
-import { ChatInfoContext, DrawerContext } from '@/app/_layout';
 import { LayoutList, MessageSquarePlus } from 'lucide-react-native';
-import { useContext } from 'react';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Button } from '@/components/ui/button';
 import { View } from 'react-native';
 import { Text } from '@/components/ui/text';
 import { Icon } from '@/components/ui/icon';
+import { useDrawerContext } from '@/lib/context/drawerContext';
+import { useChatInfoContext } from '@/lib/context/chatInfoCntext';
 export const Header = () => {
-  const { isOpen, setOpen } = useContext(DrawerContext);
-  const { setChatSession, chatSession } = useContext(ChatInfoContext);
+  const { isOpen, setOpen } = useDrawerContext();
+  const { setChatSession, chatSession } = useChatInfoContext();
   const insets = useSafeAreaInsets();
   return (
     <View

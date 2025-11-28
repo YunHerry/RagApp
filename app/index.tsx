@@ -17,6 +17,7 @@ import { useDrawerContext } from '@/lib/context/drawerContext';
 import { useChatInfoContext } from '@/lib/context/chatInfoCntext';
 import { Message } from '@/lib/type/mesage';
 import { ChatSession } from '@/lib/type/chatSession';
+import env from '@/lib/config/env';
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
   dark: require('@/assets/images/react-native-reusables-dark.png'),
