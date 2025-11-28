@@ -1,15 +1,12 @@
 import { clsx, type ClassValue } from 'clsx';
 import { twMerge } from 'tailwind-merge';
-import { ChatSession } from './types/chatSession';
+import { ChatSession } from './type/chatSession';
+import { GroupedChats } from './type/groupChats';
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
 }
-export interface GroupedChats {
-  title: string;
-  data: ChatSession[];
-  order: number;
-}
+
 export function groupChatsByDate(chatList: ChatSession[]): GroupedChats[] {
   if (!chatList || chatList.length === 0) return [];
 
