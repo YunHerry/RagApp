@@ -6,31 +6,33 @@ import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useColorScheme } from 'nativewind';
 import { Drawer } from 'react-native-drawer-layout';
-import { createContext, useEffect, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 export { ErrorBoundary } from 'expo-router';
 
 import { toast, Toaster } from 'sonner-native';
 import { ChatSession } from '@/lib/type/chatSession';
 import { setStorage, getStorage } from '@/lib/localStorage';
-import { GestureHandlerRootView, TextInput } from 'react-native-gesture-handler';
-import { drawerContent, DrawerContext } from '@/components/drawerContent';
+import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { drawerContent } from '@/components/drawerContent';
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from '@/lib/constant/screenInfo';
+import { DrawerContext } from '@/lib/context/drawerContext';
+import { ChatInfoContext } from '@/lib/context/chatInfoCntext';
+import { STORAGE_KEYS } from '@/lib/constant/storage';
 
-export const ChatInfoContext = createContext<any>(null);
 
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
   const [isOpen, setOpen] = useState(false);
-  const [chatList, setChatList] = useState([]);
+  const [chatList, setChatList] = useState<ChatSession[]>([]);
   const [chatSession, setChatSession] = useState<ChatSession | null>(null);
   useEffect(() => {
-    getStorage('chatList').then((item) => {
+    getStorage(STORAGE_KEYS.CHAT_LIST).then((item) => {
       setChatList(item || []);
     });
   }, []);
   useEffect(() => {
-    setStorage('chatList', chatList).catch(() => toast('保存失败'));
+    setStorage(STORAGE_KEYS.CHAT_LIST, chatList).catch(() => toast('保存失败'));
   }, [chatList]);
   return (
     <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>

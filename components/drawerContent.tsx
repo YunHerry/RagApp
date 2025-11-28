@@ -24,18 +24,18 @@ import { groupChatsByDate } from '@/lib/utils';
 import { ChatSession } from '@/lib/type/chatSession';
 import { PencilLine, Trash } from 'lucide-react-native';
 import { removeStorage } from '@/lib/localStorage';
-import { ChatInfoContext } from '@/app/_layout';
 import { ThemeToggle } from './ui/themeToggle';
 import classNames from 'classnames';
+import { useChatInfoContext } from '@/lib/context/chatInfoCntext';
+import { useDrawerContext } from '@/lib/context/drawerContext';
 
-export const DrawerContext = createContext<any>(null);
 
 export function drawerContent() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
   const insets = useSafeAreaInsets();
   const { colorScheme, toggleColorScheme } = useColorScheme();
-  const { isOpen, setOpen, chatList, setChatList } = useContext(DrawerContext);
-  const { setChatSession, chatSession } = useContext(ChatInfoContext);
+  const { isOpen, setOpen, chatList, setChatList } = useDrawerContext();
+  const { setChatSession, chatSession } = useChatInfoContext()
   const [isRenameOpen, setRenameOpen] = useState(false);
   const renameInputRef = useRef<TextInput | null>(null);
   const renameInput = useRef('');

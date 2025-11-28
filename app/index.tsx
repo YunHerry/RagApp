@@ -1,21 +1,22 @@
 import { Button } from '@/components/ui/button';
-import { Icon } from '@/components/ui/icon';
 import { Text } from '@/components/ui/text';
 import { Stack } from 'expo-router';
-import { MoonStarIcon, SunIcon } from 'lucide-react-native';
 import { useColorScheme } from 'nativewind';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import { Image, type ImageStyle, TextInput, View } from 'react-native';
 import { Header } from '@/components/header';
 import { Input } from '@/components/ui/input';
 import { ScrollView } from 'react-native-gesture-handler';
-import { ChatInfoContext, DrawerContext } from './_layout';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import axios from 'axios';
 import classNames from 'classnames';
 import { getStorage, setStorage } from '@/lib/localStorage';
-import Markdown from 'react-native-markdown-display';
+import Markdown, { RenderRules } from 'react-native-markdown-display';
 import { Separator } from '@/components/ui/separator';
+import { useDrawerContext } from '@/lib/context/drawerContext';
+import { useChatInfoContext } from '@/lib/context/chatInfoCntext';
+import { Message } from '@/lib/type/mesage';
+import { ChatSession } from '@/lib/type/chatSession';
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
   dark: require('@/assets/images/react-native-reusables-dark.png'),
@@ -25,7 +26,7 @@ const IMAGE_STYLE: ImageStyle = {
   height: 76,
   width: 76,
 };
-const createMarkdownRules = (isUser: boolean) => ({
+const createMarkdownRules = (isUser: boolean): Partial<RenderRules> => ({
   heading1: (node, children, parent, styles) => (
     <Text
       key={node.key}
@@ -61,8 +62,8 @@ const createMarkdownRules = (isUser: boolean) => ({
 });
 export default function Screen() {
   const { colorScheme } = useColorScheme();
-  const { setChatList, chatList } = useContext(DrawerContext);
-  const { setChatSession, chatSession } = useContext(ChatInfoContext);
+  const { setChatList, chatList } = useDrawerContext();
+  const { setChatSession, chatSession } = useChatInfoContext();
   const inputRef = useRef<TextInput | null>(null);
   const inputValueRef = useRef('');
   const [messages, setMessages] = useState<Message[]>([]);
@@ -157,9 +158,10 @@ export default function Screen() {
             if (!inputValueRef.current.length) return;
             //发送后存储消息,失败回退
             if (!chatSession) {
-              const session = {
+              const session: ChatSession = {
                 sessionId: Date.now().toString(36) + Math.random().toString(36).substring(2),
                 sessionName: inputValueRef.current,
+                createTime: new Date(),
                 lastChat: new Date(),
               };
               setChatSession(session);
@@ -227,23 +229,5 @@ export default function Screen() {
         </Button>
       </View>
     </SafeAreaView>
-  );
-}
-const THEME_ICONS = {
-  light: SunIcon,
-  dark: MoonStarIcon,
-};
-
-function ThemeToggle() {
-  const { colorScheme, toggleColorScheme } = useColorScheme();
-
-  return (
-    <Button
-      onPressIn={toggleColorScheme}
-      size="icon"
-      variant="ghost"
-      className="ios:size-9 rounded-full web:mx-4">
-      <Icon as={THEME_ICONS[colorScheme ?? 'light']} className="size-5" />
-    </Button>
   );
 }
