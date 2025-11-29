@@ -77,15 +77,16 @@ export default function Screen() {
   const [messages, setMessages] = useState<Message[]>([]);
   const processedLengthRef = useRef(0);
   const [isRequesting, setRequesting] = useState(false);
-  //当前正在回复的消息
   const [message, setMessage] = useState('');
   const messageRef = useRef('');
   useEffect(() => {
-    setMessages([]);
-    if (chatSession) {
+    if (chatSession != null) {
       getStorage(chatSession.sessionId).then((res) => {
-        setMessages(JSON.parse(res) || []);
+        const storageArr = JSON.parse(res);
+        if (storageArr?.length) setMessages(storageArr);
       });
+    } else {
+      setMessages([]);
     }
     processedLengthRef.current = 0;
     setMessage('');
@@ -149,7 +150,13 @@ export default function Screen() {
               </View>
             )}
             <View>
-              <Markdown style={{}}>{message}</Markdown>
+              <Markdown
+                style={{
+                  text: { fontSize: 18 },
+                }}
+                rules={createMarkdownRules(false)}>
+                {message}
+              </Markdown>
             </View>
           </ScrollView>
         )}
@@ -180,16 +187,21 @@ export default function Screen() {
                 setChatSession(session);
                 setChatList([...(chatList || []), session]);
               } else {
+                //需要找出来重新设置
                 chatSession.lastChat = new Date();
               }
               setRequesting(true);
-              setMessages([
-                ...messages,
-                {
-                  role: 'user',
-                  content: inputValueRef.current,
-                },
-              ]);
+              const userInput = inputValueRef.current;
+              setMessages((prev) => {
+                console.log('执行了设置user的会话');
+                return [
+                  ...prev,
+                  {
+                    role: 'user',
+                    content: userInput,
+                  },
+                ];
+              });
               axios.post(
                 'https://api.ragapp.linc.work/test/chat',
                 {
@@ -200,7 +212,6 @@ export default function Screen() {
                   responseType: 'stream',
                   onDownloadProgress: (progressEvent) => {
                     const text = progressEvent.event.target.response;
-
                     const newText = text.slice(processedLengthRef.current);
                     processedLengthRef.current = text.length;
                     const lines = newText.split('\n\n');
@@ -224,7 +235,10 @@ export default function Screen() {
                             const data = JSON.parse(payload);
                             console.log(data.content);
                             messageRef.current += data.content;
-                            setMessage((prev) => prev + data.content);
+                            setMessage((prev) => {
+                              console.log('执行了设置assistant的会话', prev);
+                              return prev + data.content;
+                            });
                           } catch (e) {
                             console.error('JSON parse error:', e);
                           }
@@ -234,7 +248,6 @@ export default function Screen() {
                   },
                 }
               );
-
               inputValueRef.current = '';
               inputRef.current?.clear();
             }}>
