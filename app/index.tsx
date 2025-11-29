@@ -96,6 +96,7 @@ export default function Screen() {
   const [isRequesting, setRequesting] = useState(false);
   const [message, setMessage] = useState('');
   const messageRef = useRef('');
+  const scrollViewRef = useRef<ScrollView>(null);
   useEffect(() => {
     if (chatSession != null) {
       getStorage(chatSession.sessionId).then((res) => {
@@ -114,7 +115,11 @@ export default function Screen() {
     if (chatSession) {
       setStorage(chatSession?.sessionId, JSON.stringify(messages));
     }
+    scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
+  useEffect(()=>{
+    scrollViewRef.current?.scrollToEnd({ animated: true });
+  },[messageRef.current])
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -138,7 +143,7 @@ export default function Screen() {
             </View>
           </View>
         ) : (
-          <ScrollView className="flex-1" contentContainerClassName="p-6 px-8">
+          <ScrollView ref={scrollViewRef} className="flex-1" contentContainerClassName="p-6 px-8">
             {messages.map((item, index) => (
               <View
                 key={index}
@@ -209,16 +214,13 @@ export default function Screen() {
               }
               setRequesting(true);
               const userInput = inputValueRef.current;
-              setMessages((prev) => {
-                console.log('执行了设置user的会话');
-                return [
-                  ...prev,
-                  {
-                    role: 'user',
-                    content: userInput,
-                  },
-                ];
-              });
+              setMessages((prev) => [
+                ...prev,
+                {
+                  role: 'user',
+                  content: userInput,
+                },
+              ]);
               axios.post(
                 'https://api.ragapp.linc.work/test/chat',
                 {
@@ -250,12 +252,9 @@ export default function Screen() {
                         } else if (payload) {
                           try {
                             const data = JSON.parse(payload);
-                            console.log(data.content);
                             messageRef.current += data.content;
-                            setMessage((prev) => {
-                              console.log('执行了设置assistant的会话', prev);
-                              return prev + data.content;
-                            });
+                            setMessage((prev) => prev + data.content);
+                            
                           } catch (e) {
                             console.error('JSON parse error:', e);
                           }
