@@ -34,13 +34,24 @@ const IMAGE_STYLE: ImageStyle = {
   height: 76,
   width: 76,
 };
-const createMarkdownRules = (isUser: boolean): Partial<RenderRules> => ({
+const createMarkdownRules = (isDark: boolean): Partial<RenderRules> => ({
+  text: (node, children, parent, styles) => (
+    <Text
+      key={node.key}
+      className={classNames({
+        'text-white': isDark,
+        'text-gray-900': !isDark,
+      })}>
+      {node.content}
+    </Text>
+  ),
+
   heading1: (node, children, parent, styles) => (
     <Text
       key={node.key}
       className={classNames('text-2xl font-bold', {
-        'text-white': isUser,
-        'text-gray-900': !isUser,
+        'text-white': isDark,
+        'text-gray-900': !isDark,
       })}>
       {children}
     </Text>
@@ -51,8 +62,8 @@ const createMarkdownRules = (isUser: boolean): Partial<RenderRules> => ({
     <Text
       key={node.key}
       className={classNames('text-xl font-bold', {
-        'text-white': isUser,
-        'text-gray-900': !isUser,
+        'text-white': isDark,
+        'text-gray-900': !isDark,
       })}>
       {children}
     </Text>
@@ -60,7 +71,13 @@ const createMarkdownRules = (isUser: boolean): Partial<RenderRules> => ({
 
   // 标题 h3
   heading3: (node, children, parent, styles) => (
-    <Text key={node.key} variant="h3">
+    <Text
+      key={node.key}
+      variant="h3"
+      className={classNames('text-xl font-bold', {
+        'text-white': isDark,
+        'text-gray-900': !isDark,
+      })}>
       {children}
     </Text>
   ),
@@ -139,7 +156,7 @@ export default function Screen() {
                   style={{
                     text: { fontSize: 18 },
                   }}
-                  rules={createMarkdownRules(false)}>
+                  rules={createMarkdownRules(colorScheme == 'dark')}>
                   {item.content}
                 </Markdown>
               </View>
@@ -154,7 +171,7 @@ export default function Screen() {
                 style={{
                   text: { fontSize: 18 },
                 }}
-                rules={createMarkdownRules(false)}>
+                rules={createMarkdownRules(colorScheme == 'dark')}>
                 {message}
               </Markdown>
             </View>
