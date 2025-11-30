@@ -25,6 +25,9 @@ import { useChatInfoContext } from '@/lib/context/chatInfoCntext';
 import { Message } from '@/lib/type/mesage';
 import { ChatSession } from '@/lib/type/chatSession';
 import env from '@/lib/config/env';
+import * as Progress from 'react-native-progress';
+import { SCREEN_WIDTH } from '@/lib/constant/screenInfo';
+
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
   dark: require('@/assets/images/react-native-reusables-dark.png'),
@@ -117,9 +120,9 @@ export default function Screen() {
     }
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messages]);
-  useEffect(()=>{
+  useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
-  },[messageRef.current])
+  }, [messageRef.current]);
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -133,6 +136,7 @@ export default function Screen() {
             contentStyle: { flex: 1 },
           }}
         />
+
         {!(messages.length > 0) ? (
           <View className="flex-1 items-center justify-center gap-8 p-4">
             <Image source={LOGO[colorScheme ?? 'light']} style={IMAGE_STYLE} resizeMode="contain" />
@@ -167,9 +171,16 @@ export default function Screen() {
               </View>
             ))}
             {isRequesting && (
-              <View className="h-1 w-full overflow-hidden rounded bg-gray-200">
-                <View className="h-full animate-pulse bg-blue-500" />
-              </View>
+              <Progress.Bar
+                indeterminate={true}
+                color="#171717"
+                borderWidth={0}
+                borderRadius={4}
+                width={SCREEN_WIDTH * 0.75}
+                height={8}
+                animationType="timing"
+                unfilledColor="#17171733"
+              />
             )}
             <View>
               <Markdown
@@ -254,7 +265,6 @@ export default function Screen() {
                             const data = JSON.parse(payload);
                             messageRef.current += data.content;
                             setMessage((prev) => prev + data.content);
-                            
                           } catch (e) {
                             console.error('JSON parse error:', e);
                           }
