@@ -7,8 +7,10 @@ import {
   Image,
   type ImageStyle,
   KeyboardAvoidingView,
+  LayoutAnimation,
   Platform,
   TextInput,
+  UIManager,
   View,
 } from 'react-native';
 import { Header } from '@/components/header';
@@ -88,6 +90,11 @@ const createMarkdownRules = (isDark: boolean): Partial<RenderRules> => ({
   // 分割线
   hr: (node, children, parent, styles) => <Separator key={node.key} className="my-4" />,
 });
+if (Platform.OS === 'android') {
+  if (UIManager.setLayoutAnimationEnabledExperimental) {
+    UIManager.setLayoutAnimationEnabledExperimental(true);
+  }
+}
 export default function Screen() {
   const { colorScheme } = useColorScheme();
   const { setChatList, chatList } = useDrawerContext();
@@ -96,10 +103,26 @@ export default function Screen() {
   const inputValueRef = useRef('');
   const [messages, setMessages] = useState<Message[]>([]);
   const processedLengthRef = useRef(0);
-  const [isRequesting, setRequesting] = useState(false);
+  const [reqeustInfo, setReqeustInfo] = useState({
+    isRequesting: false,
+    requestMsg: '',
+  });
   const [message, setMessage] = useState('');
   const messageRef = useRef('');
   const scrollViewRef = useRef<ScrollView>(null);
+  const handleStopRequesting = () => {
+    // 配置布局动画
+    LayoutAnimation.configureNext(
+      LayoutAnimation.create(
+        300, // 动画时长
+        LayoutAnimation.Types.easeInEaseOut, // 缓动函数
+        LayoutAnimation.Properties.scaleY // 作用于垂直方向
+      )
+    );
+    setReqeustInfo((prev)=>{
+      return { isRequesting: false, requestMsg: '' };
+    });
+  };
   useEffect(() => {
     if (chatSession != null) {
       getStorage(chatSession.sessionId).then((res) => {
@@ -127,8 +150,7 @@ export default function Screen() {
     <KeyboardAvoidingView
       style={{ flex: 1 }}
       behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0} // 根据你的 Header 调整
-    >
+      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
       <SafeAreaView style={{ flex: 1 }} edges={['bottom']}>
         <Stack.Screen
           options={{
@@ -160,7 +182,6 @@ export default function Screen() {
                       item.role !== 'user',
                   }
                 )}>
-                {/* <Text>{item.content}</Text> */}
                 <Markdown
                   style={{
                     text: { fontSize: 18 },
@@ -170,17 +191,20 @@ export default function Screen() {
                 </Markdown>
               </View>
             ))}
-            {isRequesting && (
-              <Progress.Bar
-                indeterminate={true}
-                color="#171717"
-                borderWidth={0}
-                borderRadius={4}
-                width={SCREEN_WIDTH * 0.75}
-                height={8}
-                animationType="timing"
-                unfilledColor="#17171733"
-              />
+            {reqeustInfo.isRequesting && (
+              <>
+                <Text className="mb-4 text-gray-400">{reqeustInfo.requestMsg}</Text>
+                <Progress.Bar
+                  indeterminate={true}
+                  color={colorScheme != 'dark' ? '#171717' : '#3964fe'}
+                  borderWidth={0}
+                  borderRadius={4}
+                  width={SCREEN_WIDTH * 0.75}
+                  height={8}
+                  animationType="timing"
+                  unfilledColor={colorScheme != 'dark' ? '#0f1115' : '#17171733'}
+                />
+              </>
             )}
             <View>
               <Markdown
@@ -223,7 +247,9 @@ export default function Screen() {
                 //需要找出来重新设置
                 chatSession.lastChat = new Date();
               }
-              setRequesting(true);
+              setReqeustInfo((prev) => {
+                return { isRequesting: true, requestMsg: '正在请求中...' };
+              });
               const userInput = inputValueRef.current;
               setMessages((prev) => [
                 ...prev,
@@ -241,6 +267,10 @@ export default function Screen() {
                 {
                   responseType: 'stream',
                   onDownloadProgress: (progressEvent) => {
+                    if (!processedLengthRef.current)
+                      setReqeustInfo((prev) => {
+                        return { isRequesting: true, requestMsg: '正在思索中...' };
+                      });
                     const text = progressEvent.event.target.response;
                     const newText = text.slice(processedLengthRef.current);
                     processedLengthRef.current = text.length;
@@ -259,7 +289,7 @@ export default function Screen() {
                           ]);
                           setMessage('');
                           messageRef.current = '';
-                          setRequesting(false);
+                          handleStopRequesting();
                         } else if (payload) {
                           try {
                             const data = JSON.parse(payload);
