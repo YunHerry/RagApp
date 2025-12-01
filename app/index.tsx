@@ -29,6 +29,7 @@ import { ChatSession } from '@/lib/type/chatSession';
 import env from '@/lib/config/env';
 import * as Progress from 'react-native-progress';
 import { SCREEN_WIDTH } from '@/lib/constant/screenInfo';
+import { stringToPositiveIntId } from '@/lib/utils';
 
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
@@ -119,7 +120,7 @@ export default function Screen() {
         LayoutAnimation.Properties.scaleY // 作用于垂直方向
       )
     );
-    setReqeustInfo((prev)=>{
+    setReqeustInfo((prev) => {
       return { isRequesting: false, requestMsg: '' };
     });
   };
@@ -202,7 +203,7 @@ export default function Screen() {
                   width={SCREEN_WIDTH * 0.75}
                   height={8}
                   animationType="timing"
-                  unfilledColor={colorScheme != 'dark' ? '#0f1115' : '#17171733'}
+                  unfilledColor={colorScheme != 'dark' ? '#17171733' : '#0f1115'}
                 />
               </>
             )}
@@ -234,8 +235,9 @@ export default function Screen() {
               processedLengthRef.current = 0;
               if (!inputValueRef.current.length) return;
               //发送后存储消息,失败回退
-              if (!chatSession) {
-                const session: ChatSession = {
+              var session = chatSession;
+              if (!session) {
+                session = {
                   sessionId: Date.now().toString(36) + Math.random().toString(36).substring(2),
                   sessionName: inputValueRef.current,
                   createTime: new Date(),
@@ -258,13 +260,29 @@ export default function Screen() {
                   content: userInput,
                 },
               ]);
+              console.log( [
+                    ...messages,
+                    {
+                      role: 'user',
+                      content: userInput,
+                    },
+                  ])
               axios.post(
-                'https://api.ragapp.linc.work/test/chat',
+                'https://api.ragapp.linc.work/test/chat/v2',
                 {
-                  message: inputValueRef.current,
+                  messages: [
+                    ...messages,
+                    {
+                      role: 'user',
+                      content: userInput,
+                    },
+                  ],
                   model: 'Qwen3-32B',
                 },
                 {
+                  headers: {
+                    'X-User-ID': stringToPositiveIntId(session.sessionId)
+                  },
                   responseType: 'stream',
                   onDownloadProgress: (progressEvent) => {
                     if (!processedLengthRef.current)

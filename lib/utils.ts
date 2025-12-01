@@ -66,3 +66,38 @@ export function groupChatsByDate(chatList: ChatSession[]): GroupedChats[] {
       ),
     }));
 }
+
+
+/**
+ * 将字符串转换为唯一的 int ID
+ * 使用 Java String.hashCode() 算法
+ */
+export function stringToIntId(str: string): number {
+  let hash = 0;
+  
+  if (str.length === 0) return hash;
+  
+  for (let i = 0; i < str.length; i++) {
+    const char = str.charCodeAt(i);
+    hash = ((hash << 5) - hash) + char;
+    hash = hash & hash; // 转换为 32 位整数
+  }
+  
+  return hash;
+}
+
+/**
+ * 生成正整数 ID
+ */
+export function stringToPositiveIntId(str: string): number {
+  const hash = stringToIntId(str);
+  return Math.abs(hash);
+}
+
+/**
+ * 生成指定范围内的 ID
+ */
+export function stringToRangedId(str: string, max: number): number {
+  const hash = stringToIntId(str);
+  return Math.abs(hash) % max;
+}
