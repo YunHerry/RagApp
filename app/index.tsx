@@ -4,6 +4,7 @@ import { Stack } from 'expo-router';
 import { useColorScheme } from 'nativewind';
 import React, { useContext, useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Image,
   type ImageStyle,
   KeyboardAvoidingView,
@@ -30,12 +31,34 @@ import env from '@/lib/config/env';
 import * as Progress from 'react-native-progress';
 import { SCREEN_WIDTH } from '@/lib/constant/screenInfo';
 import { stringToPositiveIntId } from '@/lib/utils';
-
+import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
+import { Label } from '@/components/ui/label';
+import { CirclePlus } from 'lucide-react-native';
+import { Icon } from '@/components/ui/icon';
+import * as DocumentPicker from 'expo-document-picker';
+import { toast } from 'sonner-native';
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
   dark: require('@/assets/images/react-native-reusables-dark.png'),
 };
+const SUPPORTED_TYPES = [
+  // 文档
+  'application/pdf', // .pdf
+  'application/msword', // .doc
+  'application/vnd.openxmlformats-officedocument.wordprocessingml.document', // .docx
 
+  // 演示文稿
+  'application/vnd.ms-powerpoint', // .ppt
+  'application/vnd.openxmlformats-officedocument.presentationml.presentation', // .pptx
+
+  // 图片
+  'image/png', // .png
+  'image/jpeg', // .jpg, .jpeg
+
+  // 文本
+  'text/plain', // .txt
+  'text/markdown', // .md
+];
 const IMAGE_STYLE: ImageStyle = {
   height: 76,
   width: 76,
@@ -230,103 +253,173 @@ export default function Screen() {
               inputValueRef.current = text;
             }}
           />
-          <Button
-            onPress={() => {
-              processedLengthRef.current = 0;
-              if (!inputValueRef.current.length) return;
-              //发送后存储消息,失败回退
-              var session = chatSession;
-              if (!session) {
-                session = {
-                  sessionId: Date.now().toString(36) + Math.random().toString(36).substring(2),
-                  sessionName: inputValueRef.current,
-                  createTime: new Date(),
-                  lastChat: new Date(),
-                };
-                setChatSession(session);
-                setChatList([...(chatList || []), session]);
-              } else {
-                //需要找出来重新设置
-                chatSession.lastChat = new Date();
-              }
-              setReqeustInfo((prev) => {
-                return { isRequesting: true, requestMsg: '正在请求中...' };
-              });
-              const userInput = inputValueRef.current;
-              setMessages((prev) => [
-                ...prev,
-                {
-                  role: 'user',
-                  content: userInput,
-                },
-              ]);
-              console.log( [
-                    ...messages,
-                    {
-                      role: 'user',
-                      content: userInput,
-                    },
-                  ])
-              axios.post(
-                'https://api.ragapp.linc.work/test/chat/v2',
-                {
-                  messages: [
-                    ...messages,
-                    {
-                      role: 'user',
-                      content: userInput,
-                    },
-                  ],
-                  model: 'Qwen3-32B',
-                },
-                {
-                  headers: {
-                    'X-User-ID': stringToPositiveIntId(session.sessionId)
+          <View className="flex flex-row">
+            <Popover>
+              <PopoverTrigger asChild>
+                <Button disabled={!chatSession} className="mr-5 flex-1">
+                  <Text>数据管理</Text>
+                </Button>
+              </PopoverTrigger>
+              <PopoverContent className="h-40 w-full" side="top">
+                <View>
+                  <View>
+                    <Text className="font-medium leading-none">数据管理</Text>
+                    <Text className="mt-1 text-sm text-muted-foreground">管理你会话中的文档.</Text>
+                  </View>
+                  <View className="mt-2">
+                    <ScrollView>
+                      <View className="flex-row items-center">
+                        <Label className="web:block" htmlFor="width">
+                          机器学习入门.pdf
+                        </Label>
+                      </View>
+                      <Button
+                        variant="ghost"
+                        size="icon"
+                        onPress={async () => {
+                          const result = await DocumentPicker.getDocumentAsync({
+                            type: SUPPORTED_TYPES,
+                            copyToCacheDirectory: true,
+                          });
+                          //上传
+                          if (result.canceled) {
+                            console.log('取消了文件上传');
+                            return;
+                          }
+
+                          for (const asset of result.assets) {
+                            const formData = new FormData();
+                            formData.append('file', {
+                              uri: asset.uri,
+                              type: asset.mimeType || 'application/octet-stream',
+                              name: asset.name,
+                            } as any);
+                            let reqRes = await axios
+                              .post('https://api.ragapp.linc.work/documents/upload', formData, {
+                                headers: {
+                                  'Content-Type': 'multipart/form-data',
+                                  'X-User-ID': stringToPositiveIntId(chatSession.sessionId),
+                                },
+                              })
+                              .catch((err) => {
+                                console.error('上传失败:', err);
+                                if (axios.isAxiosError(err)) {
+                                  console.error('错误详情:', {
+                                    message: err.message,
+                                    status: err.response?.status,
+                                    data: err.response?.data,
+                                  });
+                                }
+                                console.error(err.msg);
+                                toast('上传失败');
+                                return;
+                              });
+                            console.log(reqRes?.data);
+                          }
+                        }}>
+                        <Icon as={CirclePlus} size={24} />
+                      </Button>
+                    </ScrollView>
+                  </View>
+                </View>
+              </PopoverContent>
+            </Popover>
+            <Button
+              className="flex-[4]"
+              onPress={() => {
+                processedLengthRef.current = 0;
+                if (!inputValueRef.current.length) return;
+                //发送后存储消息,失败回退
+                var session = chatSession;
+                if (!session) {
+                  session = {
+                    sessionId: Date.now().toString(36) + Math.random().toString(36).substring(2),
+                    sessionName: inputValueRef.current,
+                    createTime: new Date(),
+                    lastChat: new Date(),
+                  };
+                  setChatSession(session);
+                  setChatList([...(chatList || []), session]);
+                } else {
+                  //需要找出来重新设置
+                  chatSession.lastChat = new Date();
+                }
+                setReqeustInfo((prev) => {
+                  return { isRequesting: true, requestMsg: '正在请求中...' };
+                });
+                const userInput = inputValueRef.current;
+                setMessages((prev) => [
+                  ...prev,
+                  {
+                    role: 'user',
+                    content: userInput,
                   },
-                  responseType: 'stream',
-                  onDownloadProgress: (progressEvent) => {
-                    if (!processedLengthRef.current)
-                      setReqeustInfo((prev) => {
-                        return { isRequesting: true, requestMsg: '正在思索中...' };
-                      });
-                    const text = progressEvent.event.target.response;
-                    const newText = text.slice(processedLengthRef.current);
-                    processedLengthRef.current = text.length;
-                    const lines = newText.split('\n\n');
-                    for (const line of lines) {
-                      if (line.startsWith('data: ')) {
-                        const payload = line.replace('data: ', '').trim();
-                        if (payload === '[DONE]') {
-                          const fullContent = messageRef.current;
-                          setMessages((prev) => [
-                            ...prev,
-                            {
-                              role: 'assistant',
-                              content: fullContent,
-                            },
-                          ]);
-                          setMessage('');
-                          messageRef.current = '';
-                          handleStopRequesting();
-                        } else if (payload) {
-                          try {
-                            const data = JSON.parse(payload);
-                            messageRef.current += data.content;
-                            setMessage((prev) => prev + data.content);
-                          } catch (e) {
-                            console.error('JSON parse error:', e);
+                ]);
+                console.log([
+                  ...messages,
+                  {
+                    role: 'user',
+                    content: userInput,
+                  },
+                ]);
+                axios.post(
+                  'https://api.ragapp.linc.work/test/chat/v2',
+                  {
+                    messages: [
+                      ...messages,
+                      {
+                        role: 'user',
+                        content: userInput,
+                      },
+                    ],
+                    model: 'Qwen3-32B',
+                  },
+                  {
+                    responseType: 'stream',
+                    onDownloadProgress: (progressEvent) => {
+                      if (!processedLengthRef.current)
+                        setReqeustInfo((prev) => {
+                          return { isRequesting: true, requestMsg: '正在思索中...' };
+                        });
+                      const text = progressEvent.event.target.response;
+                      const newText = text.slice(processedLengthRef.current);
+                      processedLengthRef.current = text.length;
+                      const lines = newText.split('\n\n');
+                      for (const line of lines) {
+                        if (line.startsWith('data: ')) {
+                          const payload = line.replace('data: ', '').trim();
+                          if (payload === '[DONE]') {
+                            const fullContent = messageRef.current;
+                            setMessages((prev) => [
+                              ...prev,
+                              {
+                                role: 'assistant',
+                                content: fullContent,
+                              },
+                            ]);
+                            setMessage('');
+                            messageRef.current = '';
+                            handleStopRequesting();
+                          } else if (payload) {
+                            try {
+                              const data = JSON.parse(payload);
+                              messageRef.current += data.content;
+                              setMessage((prev) => prev + data.content);
+                            } catch (e) {
+                              console.error('JSON parse error:', e);
+                            }
                           }
                         }
                       }
-                    }
-                  },
-                }
-              );
-              inputValueRef.current = '';
-              inputRef.current?.clear();
-            }}>
-            <Text>发送</Text>
-          </Button>
+                    },
+                  }
+                );
+                inputValueRef.current = '';
+                inputRef.current?.clear();
+              }}>
+              <Text>发送</Text>
+            </Button>
+          </View>
         </View>
       </SafeAreaView>
     </KeyboardAvoidingView>

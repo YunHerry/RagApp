@@ -2,52 +2,51 @@ require('dotenv').config();
 
 export default {
   expo: {
-    name: "rag_app",
-    slug: "rag_app",
-    version: "1.0.0",
-    orientation: "portrait",
-    icon: "./assets/images/icon.png",
-    scheme: "rag_app",
-    userInterfaceStyle: "automatic",
+    name: 'rag_app',
+    slug: 'rag_app',
+    version: '1.0.0',
+    orientation: 'portrait',
+    icon: './assets/images/icon.png',
+    scheme: 'rag_app',
+    userInterfaceStyle: 'automatic',
     newArchEnabled: true,
     splash: {
-      image: "./assets/images/splash.png",
-      resizeMode: "contain",
-      backgroundColor: "#282c34"
+      image: './assets/images/splash.png',
+      resizeMode: 'contain',
+      backgroundColor: '#282c34',
     },
-    assetBundlePatterns: [
-      "**/*"
-    ],
+    assetBundlePatterns: ['**/*'],
     ios: {
-      supportsTablet: true
+      supportsTablet: true,
     },
     android: {
       edgeToEdgeEnabled: true,
       adaptiveIcon: {
-        foregroundImage: "./assets/images/adaptive-icon.png",
-        backgroundColor: "#282c34"
+        foregroundImage: './assets/images/adaptive-icon.png',
+        backgroundColor: '#282c34',
       },
-      package: "com.anonymous.rag_app"
+      package: 'com.anonymous.rag_app',
     },
     web: {
-      bundler: "metro",
-      output: "static",
-      favicon: "./assets/images/favicon.png"
+      bundler: 'metro',
+      output: 'static',
+      favicon: './assets/images/favicon.png',
     },
     plugins: [
-      "expo-router",
-      "expo-build-properties"
+      'expo-router',
+      'expo-build-properties',
+      'expo-document-picker',
     ],
     experiments: {
-      typedRoutes: true
+      typedRoutes: true,
     },
     extra: {
       router: {},
       eas: {
-        projectId: "518010bc-96d4-45c7-8e57-88ab90be88a3"
+        projectId: '518010bc-96d4-45c7-8e57-88ab90be88a3',
       },
       apiUrl: process.env.API_URL,
     },
-    owner: "xianyyyyyyyyyyyyyu"
-  }
+    owner: 'xianyyyyyyyyyyyyyu',
+  },
 };
