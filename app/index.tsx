@@ -37,6 +37,7 @@ import { CirclePlus } from 'lucide-react-native';
 import { Icon } from '@/components/ui/icon';
 import * as DocumentPicker from 'expo-document-picker';
 import { toast } from 'sonner-native';
+import { uploadRagFile } from '@/lib/api/uploadFile';
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
   dark: require('@/assets/images/react-native-reusables-dark.png'),
@@ -288,33 +289,34 @@ export default function Screen() {
                           }
 
                           for (const asset of result.assets) {
-                            const formData = new FormData();
-                            formData.append('file', {
-                              uri: asset.uri,
-                              type: asset.mimeType || 'application/octet-stream',
-                              name: asset.name,
-                            } as any);
-                            let reqRes = await axios
-                              .post('https://api.ragapp.linc.work/documents/upload', formData, {
-                                headers: {
-                                  'Content-Type': 'multipart/form-data',
-                                  'X-User-ID': stringToPositiveIntId(chatSession.sessionId),
-                                },
-                              })
-                              .catch((err) => {
-                                console.error('上传失败:', err);
-                                if (axios.isAxiosError(err)) {
-                                  console.error('错误详情:', {
-                                    message: err.message,
-                                    status: err.response?.status,
-                                    data: err.response?.data,
-                                  });
-                                }
-                                console.error(err.msg);
-                                toast('上传失败');
-                                return;
-                              });
-                            console.log(reqRes?.data);
+                            // const formData = new FormData();
+                            // formData.append('file', {
+                            //   uri: asset.uri,
+                            //   type: asset.mimeType || 'application/octet-stream',
+                            //   name: asset.name,
+                            // } as any);
+                            // let reqRes = await axios
+                            //   .post('https://api.ragapp.linc.work/documents/upload', formData, {
+                            //     headers: {
+                            //       'Content-Type': 'multipart/form-data',
+                            //       'X-User-ID': stringToPositiveIntId(chatSession.sessionId),
+                            //     },
+                            //   })
+                            //   .catch((err) => {
+                            //     console.error('上传失败:', err);
+                            //     if (axios.isAxiosError(err)) {
+                            //       console.error('错误详情:', {
+                            //         message: err.message,
+                            //         status: err.response?.status,
+                            //         data: err.response?.data,
+                            //       });
+                            //     }
+                            //     console.error(err.msg);
+                            //     toast('上传失败');
+                            //     return;
+                            //   });
+                            // console.log(reqRes?.data);
+                            uploadRagFile(chatSession,asset);
                           }
                         }}>
                         <Icon as={CirclePlus} size={24} />
