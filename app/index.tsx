@@ -30,7 +30,6 @@ import { ChatSession } from '@/lib/type/chatSession';
 import env from '@/lib/config/env';
 import * as Progress from 'react-native-progress';
 import { SCREEN_WIDTH } from '@/lib/constant/screenInfo';
-import { stringToPositiveIntId } from '@/lib/utils';
 import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
 import { Label } from '@/components/ui/label';
 import { CirclePlus } from 'lucide-react-native';
@@ -38,6 +37,17 @@ import { Icon } from '@/components/ui/icon';
 import * as DocumentPicker from 'expo-document-picker';
 import { toast } from 'sonner-native';
 import { uploadRagFile } from '@/lib/api/uploadFile';
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
+import { stringToPositiveIntId } from '@/lib/utils';
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
   dark: require('@/assets/images/react-native-reusables-dark.png'),
@@ -133,15 +143,17 @@ export default function Screen() {
     requestMsg: '',
   });
   const [message, setMessage] = useState('');
+  const [open, setOpen] = useState(false);
+  const [uploadList, setUploadList] = useState<any>([]);
   const messageRef = useRef('');
   const scrollViewRef = useRef<ScrollView>(null);
+  const [ragDocs, setRagDocs] = useState<any>([]);
   const handleStopRequesting = () => {
-    // 配置布局动画
     LayoutAnimation.configureNext(
       LayoutAnimation.create(
         300, // 动画时长
-        LayoutAnimation.Types.easeInEaseOut, // 缓动函数
-        LayoutAnimation.Properties.scaleY // 作用于垂直方向
+        LayoutAnimation.Types.easeInEaseOut,
+        LayoutAnimation.Properties.scaleY
       )
     );
     setReqeustInfo((prev) => {
@@ -154,6 +166,21 @@ export default function Screen() {
         const storageArr = JSON.parse(res);
         if (storageArr?.length) setMessages(storageArr);
       });
+      axios
+        .get('https://api.ragapp.linc.work/documents', {
+          headers: {
+            'Content-Type': 'application/json',
+            'X-User-ID': stringToPositiveIntId(chatSession.sessionId),
+          },
+        })
+        .then((res) => {
+          const { documents } = res.data;
+          setRagDocs((prev) => [
+            ...documents.map((item) => ({
+              name: item.filename,
+            })),
+          ]);
+        });
     } else {
       setMessages([]);
     }
@@ -171,6 +198,7 @@ export default function Screen() {
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messageRef.current]);
+  console.log(uploadList);
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -184,12 +212,50 @@ export default function Screen() {
           }}
         />
 
+        <AlertDialog open={open}>
+          <AlertDialogContent>
+            <AlertDialogHeader>
+              <AlertDialogTitle>上传列表</AlertDialogTitle>
+              <AlertDialogDescription>
+                {uploadList.map((item: any, index: number) => {
+                  return (
+                    <View key={index}>
+                      <Text className="mt-4">{item.name}</Text>
+                      <Text className="my-4 text-gray-400">{item.statusMsg}</Text>
+                      <Progress.Bar
+                        indeterminate={item.status == UploadStatus.PROCESS}
+                        progress={getProgressByStatus(item.status) / 100}
+                        color={colorScheme != 'dark' ? '#171717' : '#3964fe'}
+                        borderWidth={0}
+                        borderRadius={4}
+                        width={SCREEN_WIDTH * 0.75}
+                        height={8}
+                        animationType="timing"
+                        unfilledColor={colorScheme != 'dark' ? '#17171733' : '#0f1115'}
+                      />
+                    </View>
+                  );
+                })}
+              </AlertDialogDescription>
+            </AlertDialogHeader>
+            <AlertDialogFooter>
+              {uploadList.every(
+                (item) =>
+                  item.status == UploadStatus.COMPLETED || item.status == UploadStatus.FAILED
+              ) ? (
+                <AlertDialogAction onPress={() => setOpen(false)}>
+                  <Text>完成</Text>
+                </AlertDialogAction>
+              ) : null}
+            </AlertDialogFooter>
+          </AlertDialogContent>
+        </AlertDialog>
         {!(messages.length > 0) ? (
           <View className="flex-1 items-center justify-center gap-8 p-4">
             <Image source={LOGO[colorScheme ?? 'light']} style={IMAGE_STYLE} resizeMode="contain" />
             <View className="gap-2 p-4">
               <Text className="ios:text-foreground font-mono text-sm text-muted-foreground">
-                我能够帮你整合各种数据,形成自己的知识库
+                我能够帮你整合各种数据，形成自己的知识库。
               </Text>
             </View>
           </View>
@@ -261,19 +327,24 @@ export default function Screen() {
                   <Text>数据管理</Text>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="h-40 w-full" side="top">
+              <PopoverContent className="max-h-[90vh] h-auto w-full" side="top">
                 <View>
                   <View>
                     <Text className="font-medium leading-none">数据管理</Text>
-                    <Text className="mt-1 text-sm text-muted-foreground">管理你会话中的文档.</Text>
+                    <Text className="mt-1 text-sm text-muted-foreground">管理你会话中的文档</Text>
                   </View>
                   <View className="mt-2">
                     <ScrollView>
-                      <View className="flex-row items-center">
-                        <Label className="web:block" htmlFor="width">
-                          机器学习入门.pdf
-                        </Label>
-                      </View>
+                      {ragDocs.map((item) => {
+                        console.log(item);
+                        return (
+                          <View className="flex-row items-center">
+                            <Label className="web:block" htmlFor="width">
+                              {item.name}
+                            </Label>
+                          </View>
+                        );
+                      })}
                       <Button
                         variant="ghost"
                         size="icon"
@@ -287,36 +358,32 @@ export default function Screen() {
                             console.log('取消了文件上传');
                             return;
                           }
-
-                          for (const asset of result.assets) {
-                            // const formData = new FormData();
-                            // formData.append('file', {
-                            //   uri: asset.uri,
-                            //   type: asset.mimeType || 'application/octet-stream',
-                            //   name: asset.name,
-                            // } as any);
-                            // let reqRes = await axios
-                            //   .post('https://api.ragapp.linc.work/documents/upload', formData, {
-                            //     headers: {
-                            //       'Content-Type': 'multipart/form-data',
-                            //       'X-User-ID': stringToPositiveIntId(chatSession.sessionId),
-                            //     },
-                            //   })
-                            //   .catch((err) => {
-                            //     console.error('上传失败:', err);
-                            //     if (axios.isAxiosError(err)) {
-                            //       console.error('错误详情:', {
-                            //         message: err.message,
-                            //         status: err.response?.status,
-                            //         data: err.response?.data,
-                            //       });
-                            //     }
-                            //     console.error(err.msg);
-                            //     toast('上传失败');
-                            //     return;
-                            //   });
-                            // console.log(reqRes?.data);
-                            uploadRagFile(chatSession,asset);
+                          setOpen(true);
+                          setUploadList(
+                            result.assets.map((item) => {
+                              return {
+                                name: item.name,
+                                statusMsg: '正在等待中...',
+                                status: 'pending',
+                              };
+                            })
+                          );
+                          for (let index = 0; index < result.assets.length; index++) {
+                            const asset = result.assets[index];
+                            await uploadRagFile(chatSession, asset, (msg, status) => {
+                              setUploadList((prevList: any[]) =>
+                                prevList.map((item, i) =>
+                                  i === index ? { ...item, statusMsg: msg, status: status } : item
+                                )
+                              );
+                              if (status == UploadStatus.COMPLETED)
+                                setRagDocs((prev) => [
+                                  ...prev,
+                                  {
+                                    name: asset.name,
+                                  },
+                                ]);
+                            });
                           }
                         }}>
                         <Icon as={CirclePlus} size={24} />
@@ -426,4 +493,30 @@ export default function Screen() {
       </SafeAreaView>
     </KeyboardAvoidingView>
   );
+}
+export enum UploadStatus {
+  PENDING = 'pending',
+  PRESIGN = 'presign',
+  READ = 'read',
+  UPLOAD = 'upload',
+  CONFIRM = 'confirm',
+  PROCESS = 'process',
+  COMPLETED = 'completed',
+  FAILED = 'failed',
+}
+
+// 进度映射函数
+function getProgressByStatus(status: UploadStatus): number {
+  const progressMap: Record<UploadStatus, number> = {
+    [UploadStatus.PENDING]: 0,
+    [UploadStatus.PRESIGN]: 15,
+    [UploadStatus.READ]: 25,
+    [UploadStatus.UPLOAD]: 50,
+    [UploadStatus.CONFIRM]: 70,
+    [UploadStatus.PROCESS]: 85,
+    [UploadStatus.COMPLETED]: 100,
+    [UploadStatus.FAILED]: 0,
+  };
+
+  return progressMap[status] || 0;
 }
