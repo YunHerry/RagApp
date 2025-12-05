@@ -178,6 +178,7 @@ export default function Screen() {
           setRagDocs((prev) => [
             ...documents.map((item) => ({
               name: item.filename,
+              id: item.document_id,
             })),
           ]);
         });
@@ -327,7 +328,7 @@ export default function Screen() {
                   <Text>数据管理</Text>
                 </Button>
               </PopoverTrigger>
-              <PopoverContent className="max-h-[90vh] h-auto w-full" side="top">
+              <PopoverContent className="h-auto max-h-[90vh] w-full" side="top">
                 <View>
                   <View>
                     <Text className="font-medium leading-none">数据管理</Text>
@@ -424,26 +425,21 @@ export default function Screen() {
                     content: userInput,
                   },
                 ]);
-                console.log([
-                  ...messages,
-                  {
-                    role: 'user',
-                    content: userInput,
-                  },
-                ]);
+                //获取rag文本片段
                 axios.post(
-                  'https://api.ragapp.linc.work/test/chat/v2',
+                  'https://api.ragapp.linc.work/rag/chat',
                   {
-                    messages: [
-                      ...messages,
-                      {
-                        role: 'user',
-                        content: userInput,
-                      },
-                    ],
+                    question: userInput,
+                    mode: 'hybrid',
+                    history: [...messages],
+                    document_ids: ragDocs.map((item) => item.id),
+                    top_k: 20,
                     model: 'Qwen3-32B',
                   },
                   {
+                    headers: {
+                      'X-User-ID': stringToPositiveIntId(chatSession.sessionId),
+                    },
                     responseType: 'stream',
                     onDownloadProgress: (progressEvent) => {
                       if (!processedLengthRef.current)
