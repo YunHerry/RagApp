@@ -50,7 +50,7 @@ export async function uploadRagFile(
         throw new Error(`上传失败: ${uploadResponse.status}`);
       }
 
-      onStatusChange('文件上传完成',UploadStatus.UPLOAD);
+      onStatusChange('文件上传完成', UploadStatus.UPLOAD);
 
       // 确认上传
       let confirmRes = await axios.post(
@@ -63,7 +63,7 @@ export async function uploadRagFile(
           },
         }
       );
-      onStatusChange('确认文件上传',UploadStatus.CONFIRM)
+      onStatusChange('确认文件上传', UploadStatus.CONFIRM);
       // 轮询检查状态
       const interval = setInterval(async () => {
         try {
@@ -85,11 +85,11 @@ export async function uploadRagFile(
             resolve({ success: true, document_id }); // ✅ 成功时 resolve
           } else if (status === 'failed') {
             console.log('处理失败');
-            onStatusChange('处理失败',UploadStatus.FAILED);
+            onStatusChange('处理失败', UploadStatus.FAILED);
             clearInterval(interval);
             resolve({ success: false, error: '处理失败' }); // ✅ 失败时也 resolve
           } else {
-            onStatusChange('处理中...',UploadStatus.PROCESS);
+            onStatusChange('处理中...', UploadStatus.PROCESS);
             console.log('处理中');
           }
         } catch (pollError) {
@@ -98,7 +98,6 @@ export async function uploadRagFile(
           resolve({ success: false, error: '轮询失败' }); // ✅ 轮询出错也 resolve
         }
       }, 2000);
-
     } catch (error) {
       // ✅ 捕获错误，返回 resolve 而不是 reject
       if (axios.isAxiosError(error)) {
@@ -115,10 +114,23 @@ export async function uploadRagFile(
           console.error('配置错误:', error.message);
         }
       } else {
-        console.error('其他错误:', error);
+        console.error('其他错误详情:', {
+          错误类型: error?.constructor?.name || typeof error,
+          错误消息: error?.message || String(error),
+          错误堆栈: error?.stack,
+          完整错误对象: error,
+          所有属性: error ? Object.getOwnPropertyNames(error) : [],
+          json: (() => {
+            try {
+              return JSON.stringify(error, null, 2);
+            } catch {
+              return '无法序列化';
+            }
+          })(),
+        });
       }
 
-      onStatusChange('上传失败',UploadStatus.FAILED);
+      onStatusChange('上传失败', UploadStatus.FAILED);
       toast('上传失败');
       resolve({ success: false, error: error.message }); // ✅ 出错也 resolve
     }
