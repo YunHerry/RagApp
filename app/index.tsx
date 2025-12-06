@@ -148,6 +148,7 @@ export default function Screen() {
   const messageRef = useRef('');
   const scrollViewRef = useRef<ScrollView>(null);
   const [ragDocs, setRagDocs] = useState<any>([]);
+  const controller = useRef(new AbortController());
   const handleStopRequesting = () => {
     LayoutAnimation.configureNext(
       LayoutAnimation.create(
@@ -184,6 +185,7 @@ export default function Screen() {
         });
     } else {
       setMessages([]);
+      setRagDocs((pre)=>[]);
     }
     processedLengthRef.current = 0;
     setMessage('');
@@ -199,7 +201,6 @@ export default function Screen() {
   useEffect(() => {
     scrollViewRef.current?.scrollToEnd({ animated: true });
   }, [messageRef.current]);
-  console.log(uploadList);
   return (
     <KeyboardAvoidingView
       style={{ flex: 1 }}
@@ -337,9 +338,8 @@ export default function Screen() {
                   <View className="mt-2">
                     <ScrollView>
                       {ragDocs.map((item) => {
-                        console.log(item);
                         return (
-                          <View className="flex-row items-center">
+                          <View key={item.id} className="flex-row items-center">
                             <Label className="web:block" htmlFor="width">
                               {item.name}
                             </Label>
@@ -397,6 +397,20 @@ export default function Screen() {
             <Button
               className="flex-[4]"
               onPress={() => {
+                if (reqeustInfo.isRequesting) {
+                  controller.current.abort();
+                  setMessages((prev) => [
+                    ...prev,
+                    {
+                      role: 'assistant',
+                      content: messageRef.current,
+                    },
+                  ]);
+                  setMessage('');
+                  messageRef.current = '';
+                  handleStopRequesting();
+                  return;
+                }
                 processedLengthRef.current = 0;
                 if (!inputValueRef.current.length) return;
                 //发送后存储消息,失败回退
@@ -404,7 +418,7 @@ export default function Screen() {
                 if (!session) {
                   session = {
                     sessionId: Date.now().toString(36) + Math.random().toString(36).substring(2),
-                    sessionName: inputValueRef.current,
+                    sessionName: inputValueRef.current.replaceAll('\n', ''),
                     createTime: new Date(),
                     lastChat: new Date(),
                   };
@@ -426,63 +440,91 @@ export default function Screen() {
                   },
                 ]);
                 //获取rag文本片段
-                axios.post(
-                  'https://api.ragapp.linc.work/rag/chat',
-                  {
-                    question: userInput,
-                    mode: 'hybrid',
-                    history: [...messages],
-                    document_ids: ragDocs.map((item) => item.id),
-                    top_k: 20,
-                    model: 'Qwen3-32B',
-                  },
-                  {
-                    headers: {
-                      'X-User-ID': stringToPositiveIntId(chatSession.sessionId),
+
+                axios
+                  .post(
+                    'https://api.ragapp.linc.work/rag/chat',
+                    {
+                      question: userInput,
+                      mode: 'hybrid',
+                      history: [...messages],
+                      document_ids: ragDocs.map((item) => item.id),
+                      top_k: 20,
                     },
-                    responseType: 'stream',
-                    onDownloadProgress: (progressEvent) => {
-                      if (!processedLengthRef.current)
-                        setReqeustInfo((prev) => {
-                          return { isRequesting: true, requestMsg: '正在思索中...' };
-                        });
-                      const text = progressEvent.event.target.response;
-                      const newText = text.slice(processedLengthRef.current);
-                      processedLengthRef.current = text.length;
-                      const lines = newText.split('\n\n');
-                      for (const line of lines) {
-                        if (line.startsWith('data: ')) {
-                          const payload = line.replace('data: ', '').trim();
-                          if (payload === '[DONE]') {
-                            const fullContent = messageRef.current;
-                            setMessages((prev) => [
-                              ...prev,
-                              {
-                                role: 'assistant',
-                                content: fullContent,
-                              },
-                            ]);
-                            setMessage('');
-                            messageRef.current = '';
-                            handleStopRequesting();
-                          } else if (payload) {
-                            try {
-                              const data = JSON.parse(payload);
-                              messageRef.current += data.content;
-                              setMessage((prev) => prev + data.content);
-                            } catch (e) {
-                              console.error('JSON parse error:', e);
+                    {
+                      signal: controller.current.signal,
+                      headers: {
+                        'X-User-ID': stringToPositiveIntId(session.sessionId),
+                      },
+                      responseType: 'stream',
+                      onDownloadProgress: (progressEvent) => {
+                        if (!processedLengthRef.current)
+                          setReqeustInfo((prev) => {
+                            return { isRequesting: true, requestMsg: '正在思索中...' };
+                          });
+                        const text = progressEvent.event.target.response;
+                        const newText = text.slice(processedLengthRef.current);
+                        processedLengthRef.current = text.length;
+                        const lines = newText.split('\n\n');
+                        for (const line of lines) {
+                          if (line.startsWith('data: ')) {
+                            const payload = line.replace('data: ', '').trim();
+                            if (payload === '[DONE]') {
+                              const fullContent = messageRef.current;
+                              setMessages((prev) => [
+                                ...prev,
+                                {
+                                  role: 'assistant',
+                                  content: fullContent,
+                                },
+                              ]);
+                              setMessage('');
+                              messageRef.current = '';
+                              handleStopRequesting();
+                            } else if (payload) {
+                              try {
+                                const data = JSON.parse(payload);
+                                console.log(data);
+                                if (data.body) {
+                                  toast.error(data.body.message);
+                                  setMessage('');
+                                  messageRef.current = '';
+                                  handleStopRequesting();
+                                }
+                                messageRef.current += data.content;
+                                setMessage((prev) => prev + data.content);
+                              } catch (e) {
+                                console.error('JSON parse error:', e);
+                              }
                             }
                           }
                         }
-                      }
-                    },
-                  }
-                );
+                      },
+                    }
+                  )
+                  .catch((err) => {
+                    if (axios.isAxiosError(err)) {
+                      console.log('AxiosError:', {
+                        message: err.message,
+                        code: err.code,
+                        status: err.response?.status,
+                        statusText: err.response?.statusText,
+                        data: err.response?.data,
+                        url: err.config?.url,
+                        method: err.config?.method,
+                        headers: err.response?.headers,
+                      });
+
+                      toast.error(err.response?.data?.message || err.message || '请求失败');
+                    } else {
+                      console.log('未知错误:', err);
+                      toast.error('未知错误');
+                    }
+                  });
                 inputValueRef.current = '';
                 inputRef.current?.clear();
               }}>
-              <Text>发送</Text>
+              <Text>{reqeustInfo.isRequesting ? '停止生成' : '发送'}</Text>
             </Button>
           </View>
         </View>
@@ -501,7 +543,6 @@ export enum UploadStatus {
   FAILED = 'failed',
 }
 
-// 进度映射函数
 function getProgressByStatus(status: UploadStatus): number {
   const progressMap: Record<UploadStatus, number> = {
     [UploadStatus.PENDING]: 0,
