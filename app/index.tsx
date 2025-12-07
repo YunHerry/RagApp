@@ -130,6 +130,9 @@ if (Platform.OS === 'android') {
     UIManager.setLayoutAnimationEnabledExperimental(true);
   }
 }
+function UploadWindow() {
+  
+}
 export default function Screen() {
   const { colorScheme } = useColorScheme();
   const { setChatList, chatList } = useDrawerContext();
@@ -176,6 +179,7 @@ export default function Screen() {
         })
         .then((res) => {
           const { documents } = res.data;
+          console.log(documents);
           setRagDocs((prev) => [
             ...documents.map((item) => ({
               name: item.filename,
@@ -185,7 +189,7 @@ export default function Screen() {
         });
     } else {
       setMessages([]);
-      setRagDocs((pre)=>[]);
+      setRagDocs((pre) => []);
     }
     processedLengthRef.current = 0;
     setMessage('');
@@ -338,6 +342,7 @@ export default function Screen() {
                   <View className="mt-2">
                     <ScrollView>
                       {ragDocs.map((item) => {
+                        console.log(item);
                         return (
                           <View key={item.id} className="flex-row items-center">
                             <Label className="web:block" htmlFor="width">
@@ -377,15 +382,25 @@ export default function Screen() {
                                   i === index ? { ...item, statusMsg: msg, status: status } : item
                                 )
                               );
-                              if (status == UploadStatus.COMPLETED)
-                                setRagDocs((prev) => [
-                                  ...prev,
-                                  {
-                                    name: asset.name,
-                                  },
-                                ]);
+                              if (status == UploadStatus.COMPLETED) console.log('触发');
                             });
                           }
+                          axios
+                            .get('https://api.ragapp.linc.work/documents', {
+                              headers: {
+                                'Content-Type': 'application/json',
+                                'X-User-ID': stringToPositiveIntId(chatSession.sessionId),
+                              },
+                            })
+                            .then((res) => {
+                              const { documents } = res.data;
+                              setRagDocs((prev) => [
+                                ...documents.map((item) => ({
+                                  name: item.filename,
+                                  id: item.document_id,
+                                })),
+                              ]);
+                            });
                         }}>
                         <Icon as={CirclePlus} size={24} />
                       </Button>
@@ -418,7 +433,10 @@ export default function Screen() {
                 if (!session) {
                   session = {
                     sessionId: Date.now().toString(36) + Math.random().toString(36).substring(2),
-                    sessionName: inputValueRef.current.replaceAll('\n', ''),
+                    sessionName:
+                      inputValueRef.current.replaceAll('\n', '').length > 5
+                        ? inputValueRef.current.replaceAll('\n', '').slice(0, 5) + '...'
+                        : inputValueRef.current.replaceAll('\n', ''),
                     createTime: new Date(),
                     lastChat: new Date(),
                   };

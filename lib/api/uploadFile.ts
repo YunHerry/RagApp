@@ -76,7 +76,7 @@ export async function uploadRagFile(
             }
           );
 
-          const { status } = res.data;
+          const { status,progress_stage } = res.data;
 
           if (status === 'completed') {
             console.log('文件处理完成');
@@ -89,8 +89,8 @@ export async function uploadRagFile(
             clearInterval(interval);
             resolve({ success: false, error: '处理失败' }); // ✅ 失败时也 resolve
           } else {
-            onStatusChange('处理中...', UploadStatus.PROCESS);
-            console.log('处理中');
+            onStatusChange(progress_stage, UploadStatus.PROCESS);
+            console.log(progress_stage);
           }
         } catch (pollError) {
           console.error('轮询出错:', pollError);
