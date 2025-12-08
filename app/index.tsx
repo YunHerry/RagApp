@@ -77,7 +77,7 @@ export default function Screen() {
   });
   const [message, setMessage] = useState('');
   const [uploadWindowOpen, setUploadWindowOpen] = useState(false);
-  const [dataManagerWindowOpen, setDataManagerWindowOpen] = useState(true);
+  const [dataManagerWindowOpen, setDataManagerWindowOpen] = useState(false);
   const [uploadList, setUploadList] = useState<any>([]);
   const messageRef = useRef('');
   const scrollViewRef = useRef<ScrollView>(null);
@@ -114,6 +114,7 @@ export default function Screen() {
             ...documents.map((item) => ({
               name: item.filename,
               id: item.document_id,
+              isChecked: item.is_selected,
             })),
           ]);
         });
@@ -301,8 +302,6 @@ export default function Screen() {
                       content: userInput,
                     },
                   ]);
-                  //获取rag文本片段
-
                   axios
                     .post(
                       'https://api.ragapp.linc.work/rag/chat',
@@ -310,8 +309,8 @@ export default function Screen() {
                         question: userInput,
                         mode: 'hybrid',
                         history: [...messages],
-                        document_ids: ragDocs.map((item) => item.id),
-                        top_k: 20,
+                        document_ids: ragDocs.filter(item=>item.isChecked).map((item) => item.id) || [],
+                        top_k: 10,
                       },
                       {
                         signal: controller.current.signal,
@@ -346,7 +345,6 @@ export default function Screen() {
                               } else if (payload) {
                                 try {
                                   const data = JSON.parse(payload);
-                                  console.log(data);
                                   if (data.body) {
                                     toast.error(data.body.message);
                                     setMessage('');
@@ -376,7 +374,7 @@ export default function Screen() {
                           method: err.config?.method,
                           headers: err.response?.headers,
                         });
-
+                        
                         toast.error(err.response?.data?.message || err.message || '请求失败');
                       } else {
                         console.log('未知错误:', err);
