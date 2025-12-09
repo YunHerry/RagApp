@@ -14,6 +14,7 @@ import { toast, Toaster } from 'sonner-native';
 import { ChatSession } from '@/lib/type/chatSession';
 import { setStorage, getStorage } from '@/lib/localStorage';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { KeyboardProvider } from 'react-native-keyboard-controller';
 import { drawerContent } from '@/components/drawerContent';
 import { SCREEN_HEIGHT, SCREEN_WIDTH } from '@/lib/constant/screenInfo';
 import { DrawerContext } from '@/lib/context/drawerContext';
@@ -37,10 +38,11 @@ export default function RootLayout() {
     <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
       <SafeAreaProvider>
         <GestureHandlerRootView>
-          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          <ChatInfoContext.Provider value={{ chatSession, setChatSession }}>
-            <DrawerContext.Provider value={{ isOpen, setOpen, setChatList, chatList }}>
-              <Drawer
+          <KeyboardProvider>
+            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+            <ChatInfoContext.Provider value={{ chatSession, setChatSession }}>
+              <DrawerContext.Provider value={{ isOpen, setOpen, setChatList, chatList }}>
+                <Drawer
                 drawerStyle={{
                   flex: 1,
                   backgroundColor: colorScheme === 'dark' ? '#1f2937' : '#ffffff',
@@ -56,8 +58,9 @@ export default function RootLayout() {
                 <Toaster />
               </Drawer>
               <PortalHost />
-            </DrawerContext.Provider>
-          </ChatInfoContext.Provider>
+              </DrawerContext.Provider>
+            </ChatInfoContext.Provider>
+          </KeyboardProvider>
         </GestureHandlerRootView>
       </SafeAreaProvider>
     </ThemeProvider>

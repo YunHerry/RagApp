@@ -7,9 +7,7 @@ import {
   Image,
   type ImageStyle,
   Keyboard,
-  KeyboardAvoidingView,
   LayoutAnimation,
-  Platform,
   TextInput,
   UIManager,
   View,
@@ -39,6 +37,7 @@ import { createMarkdownRules } from '@/lib/config/mardownRules';
 import { SUPPORTED_TYPES } from '@/lib/config/supportedTypes';
 import { UploadWindow } from '@/components/uploadWindow';
 import { DataManagerWindow } from '@/components/dataManagerWindow';
+import { KeyboardStickyView } from 'react-native-keyboard-controller';
 
 const LOGO = {
   light: require('@/assets/images/react-native-reusables-light.png'),
@@ -140,10 +139,7 @@ export default function Screen() {
   }, [messageRef.current]);
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, paddingBottom: insets.bottom }}
-      behavior={"height"}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
+    <View style={{ flex: 1 }}>
       <WindowContext.Provider
         value={{
           uploadWindowOpen,
@@ -222,8 +218,9 @@ export default function Screen() {
             </View>
           </ScrollView>
         )}
-        <View className="w-full flex-col gap-4 border-t border-border px-4 py-4">
-          <Input
+        <KeyboardStickyView offset={{ closed: 0, opened: insets.bottom }}>
+          <View className="w-full flex-col gap-4 border-t border-border bg-background px-4 py-4" style={{ paddingBottom: insets.bottom }}>
+            <Input
             multiline
             numberOfLines={4}
             className="h-24 py-3"
@@ -386,10 +383,11 @@ export default function Screen() {
               }}>
               <Text>{reqeustInfo.isRequesting ? '停止生成' : '发送'}</Text>
             </Button>
+            </View>
           </View>
-        </View>
+        </KeyboardStickyView>
       </WindowContext.Provider>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 export enum UploadStatus {

@@ -21,6 +21,7 @@ export default {
     },
     android: {
       edgeToEdgeEnabled: true,
+      softwareKeyboardLayoutMode: 'resize',
       adaptiveIcon: {
         foregroundImage: './assets/images/icon1.png',
         backgroundColor: '#282c34',
