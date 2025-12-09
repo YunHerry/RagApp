@@ -28,6 +28,7 @@ import { ThemeToggle } from './ui/themeToggle';
 import classNames from 'classnames';
 import { useChatInfoContext } from '@/lib/context/chatInfoCntext';
 import { useDrawerContext } from '@/lib/context/drawerContext';
+import { SCREEN_HEIGHT } from '@/lib/constant/screenInfo';
 
 export function drawerContent() {
   const [openMenuId, setOpenMenuId] = useState<string | null>(null);
@@ -46,13 +47,13 @@ export function drawerContent() {
     <SafeAreaView
       className="flex flex-1"
       style={{
-        paddingTop: insets.top + 20,
+        height: SCREEN_HEIGHT,
+        paddingTop: insets.top,
         paddingBottom: insets.bottom,
         paddingLeft: insets.left + 20,
         paddingRight: 20,
         backgroundColor: colorScheme === 'dark' ? '#1f2937' : '#ffffff',
-      }}
-      edges={['bottom']}>
+      }}>
       <AlertDialog open={isRenameOpen}>
         <AlertDialogContent>
           <AlertDialogHeader>
@@ -135,7 +136,7 @@ export function drawerContent() {
                     setRenameOpen(true);
                     renameItemId.current = item.sessionId;
                   }}>
-                  <PencilLine size={20} />
+                  <PencilLine color={colorScheme === 'dark' ? '#ffffff' : '#1f2937'} size={20} />
                   <Text>重命名</Text>
                 </ContextMenuItem>
 

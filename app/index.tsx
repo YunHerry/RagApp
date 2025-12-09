@@ -142,7 +142,7 @@ export default function Screen() {
   return (
     <KeyboardAvoidingView
       style={{ flex: 1, paddingBottom: insets.bottom }}
-      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+      behavior={"height"}
       keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
       <WindowContext.Provider
         value={{
@@ -154,6 +154,7 @@ export default function Screen() {
           setDataManagerWindowOpen,
           ragDocs,
           setRagDocs,
+          reqeustInfo
         }}>
         <Stack.Screen
           options={{

@@ -35,6 +35,7 @@ export function DataManagerWindow() {
     ragDocs,
     setRagDocs,
     setUploadList,
+    reqeustInfo
   } = useWindowContext();
   const { setChatSession, chatSession } = useChatInfoContext();
   const { colorScheme } = useColorScheme();
@@ -43,7 +44,7 @@ export function DataManagerWindow() {
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>数据管理</AlertDialogTitle>
-          <AlertDialogDescription className="h-96" style={{ width: SCREEN_WIDTH / 2 }}>
+          <AlertDialogDescription className="h-96" style={{ width: (SCREEN_WIDTH * 3) / 4 }}>
             <View className="mt-2">
               <FlatList
                 data={ragDocs}
@@ -52,7 +53,7 @@ export function DataManagerWindow() {
                   return (
                     <View
                       key={item.id}
-                      className="mt-4 flex flex-row items-center justify-between gap-3">
+                      className="w-full mt-4 flex flex-row items-center justify-between gap-3">
                       <Checkbox
                         checked={item.isChecked}
                         style={{
@@ -89,9 +90,11 @@ export function DataManagerWindow() {
                             });
                         }}
                       />
-                      <Label numberOfLines={1} ellipsizeMode="tail">
-                        {item.name.length > 18 ? item.name.slice(0, 18) + '...' : item.name}
+                      <View className='flex w-3/4'>
+                        <Label numberOfLines={1} ellipsizeMode="tail">
+                        {item.name}
                       </Label>
+                      </View>
                       <Button
                         variant="ghost"
                         size="icon"
@@ -129,6 +132,10 @@ export function DataManagerWindow() {
                 variant="ghost"
                 size="icon"
                 onPress={async () => {
+                  if(reqeustInfo.isRequesting) {
+                    toast.warning("请回答完成再上传文档")
+                    return;
+                  }
                   const result = await DocumentPicker.getDocumentAsync({
                     type: SUPPORTED_TYPES,
                     copyToCacheDirectory: true,
