@@ -6,6 +6,7 @@ import React, { createContext, useContext, useEffect, useRef, useState } from 'r
 import {
   Image,
   type ImageStyle,
+  Keyboard,
   KeyboardAvoidingView,
   LayoutAnimation,
   Platform,
@@ -242,7 +243,10 @@ export default function Screen() {
                 size="icon"
                 disabled={!chatSession}
                 className="mr-5 flex-1"
-                onPress={() => setDataManagerWindowOpen(true)}>
+                onPress={() => {
+                  setDataManagerWindowOpen(true) 
+                  Keyboard.dismiss()
+                }}>
                 <FileUp color={colorScheme != 'dark' ? '#171717' : '#ffffff'} />
               </Button>
 
@@ -277,14 +281,14 @@ export default function Screen() {
                       createTime: new Date(),
                       lastChat: new Date(),
                     };
-                    setChatSession(session);
+                    setChatSession((prev)=>session);
                     setChatList([...(chatList || []), session]);
                   } else {
                     const updatedSession = {
                       ...session,
                       lastChat: new Date(),
                     };
-                    setChatSession(updatedSession);
+                    setChatSession((prev)=>updatedSession);
                     setChatList((prev) =>
                       prev.map((item) =>
                         item.sessionId === session.sessionId ? updatedSession : item
