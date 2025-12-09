@@ -2,11 +2,11 @@ require('dotenv').config();
 
 export default {
   expo: {
-    name: 'rag_app',
+    name: 'K',
     slug: 'rag_app',
     version: '1.0.0',
     orientation: 'portrait',
-    icon: './assets/images/icon.png',
+    icon: './assets/images/icon1.png',
     scheme: 'rag_app',
     userInterfaceStyle: 'automatic',
     newArchEnabled: true,
@@ -22,7 +22,7 @@ export default {
     android: {
       edgeToEdgeEnabled: true,
       adaptiveIcon: {
-        foregroundImage: './assets/images/adaptive-icon.png',
+        foregroundImage: './assets/images/icon1.png',
         backgroundColor: '#282c34',
       },
       package: 'com.anonymous.rag_app',
