@@ -243,7 +243,7 @@ export default function Screen() {
                 disabled={!chatSession}
                 className="mr-5 flex-1"
                 onPress={() => setDataManagerWindowOpen(true)}>
-                <FileUp color={colorScheme != 'dark' ? '#171717' : '#3964fe'} />
+                <FileUp color={colorScheme != 'dark' ? '#171717' : '#ffffff'} />
               </Button>
 
               <Button

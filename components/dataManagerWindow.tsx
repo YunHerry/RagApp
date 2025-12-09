@@ -24,6 +24,8 @@ import { FlatList } from 'react-native-gesture-handler';
 import { Checkbox } from './ui/checkbox';
 import { useMemo } from 'react';
 import { toast } from 'sonner-native';
+import { SCREEN_WIDTH } from '@/lib/constant/screenInfo';
+import { useColorScheme } from 'nativewind';
 export function DataManagerWindow() {
   const {
     dataManagerWindowOpen,
@@ -35,21 +37,33 @@ export function DataManagerWindow() {
     setUploadList,
   } = useWindowContext();
   const { setChatSession, chatSession } = useChatInfoContext();
+  const { colorScheme } = useColorScheme();
   return (
     <AlertDialog open={dataManagerWindowOpen}>
       <AlertDialogContent>
         <AlertDialogHeader>
           <AlertDialogTitle>数据管理</AlertDialogTitle>
-          <AlertDialogDescription className="h-96 w-96">
+          <AlertDialogDescription className="h-96" style={{ width: SCREEN_WIDTH / 2 }}>
             <View className="mt-2">
               <FlatList
                 data={ragDocs}
+                className="flex-1"
                 renderItem={({ item }) => {
                   return (
-                    <View key={item.id} className="mt-4 flex flex-row items-center gap-3">
+                    <View
+                      key={item.id}
+                      className="mt-4 flex flex-row items-center justify-between gap-3">
                       <Checkbox
-                        id="terms"
                         checked={item.isChecked}
+                        style={{
+                          borderColor: colorScheme !== 'dark' ? '#171717' : '#ffffff',
+                          backgroundColor: item.isChecked
+                            ? colorScheme !== 'dark'
+                              ? '#171717'
+                              : '#ffffff'
+                            : 'transparent',
+                        }}
+                        iconClassName="text-white dark:text-black"
                         onCheckedChange={() => {
                           setRagDocs((prev) =>
                             prev.map((docs) =>
@@ -75,12 +89,8 @@ export function DataManagerWindow() {
                             });
                         }}
                       />
-                      <Label
-                        className="web:block"
-                        htmlFor="width"
-                        numberOfLines={1}
-                        ellipsizeMode="tail">
-                        {item.name}
+                      <Label numberOfLines={1} ellipsizeMode="tail">
+                        {item.name.length > 18 ? item.name.slice(0, 18) + '...' : item.name}
                       </Label>
                       <Button
                         variant="ghost"
