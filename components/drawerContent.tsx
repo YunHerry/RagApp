@@ -47,6 +47,7 @@ export function drawerContent() {
       className="flex flex-1"
       style={{
         paddingTop: insets.top + 20,
+        paddingBottom: insets.bottom,
         paddingLeft: insets.left + 20,
         paddingRight: 20,
         backgroundColor: colorScheme === 'dark' ? '#1f2937' : '#ffffff',
@@ -166,7 +167,7 @@ export function drawerContent() {
         />
       )}
       <View
-        className="p-4"
+        className="p-4 px-0"
         style={{ backgroundColor: colorScheme === 'dark' ? '#1f2937' : '#ffffff' }}>
         {ThemeToggle()}
       </View>
