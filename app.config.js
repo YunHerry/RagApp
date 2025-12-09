@@ -2,7 +2,7 @@ require('dotenv').config();
 
 export default {
   expo: {
-    name: 'K',
+    name: '知索',
     slug: 'rag_app',
     version: '1.0.0',
     orientation: 'portrait',
