@@ -34,7 +34,14 @@ export default {
     },
     plugins: [
       'expo-router',
-      'expo-build-properties',
+      [
+        'expo-build-properties',
+        {
+          android: {
+            buildArchs: ['arm64-v8a', 'x86_64'],
+          },
+        },
+      ],
       'expo-document-picker',
     ],
     experiments: {
