@@ -19,7 +19,7 @@ import { SCREEN_HEIGHT, SCREEN_WIDTH } from '@/lib/constant/screenInfo';
 import { DrawerContext } from '@/lib/context/drawerContext';
 import { ChatInfoContext } from '@/lib/context/chatInfoCntext';
 import { STORAGE_KEYS } from '@/lib/constant/storage';
-
+import { KeyboardProvider, KeyboardStickyView } from 'react-native-keyboard-controller';
 export default function RootLayout() {
   const { colorScheme } = useColorScheme();
   const [isOpen, setOpen] = useState(false);
@@ -37,27 +37,29 @@ export default function RootLayout() {
     <ThemeProvider value={NAV_THEME[colorScheme ?? 'light']}>
       <SafeAreaProvider>
         <GestureHandlerRootView>
-          <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
-          <ChatInfoContext.Provider value={{ chatSession, setChatSession }}>
-            <DrawerContext.Provider value={{ isOpen, setOpen, setChatList, chatList }}>
-              <Drawer
-                drawerStyle={{
-                  flex: 1,
-                  backgroundColor: colorScheme === 'dark' ? '#1f2937' : '#ffffff',
-                }}
-                open={isOpen}
-                onOpen={() => setOpen(true)}
-                onClose={() => setOpen(false)}
-                drawerPosition="left"
-                drawerType="slide"
-                swipeEdgeWidth={SCREEN_WIDTH}
-                renderDrawerContent={drawerContent}>
-                <Stack />
-                <Toaster />
-              </Drawer>
-              <PortalHost />
-            </DrawerContext.Provider>
-          </ChatInfoContext.Provider>
+          <KeyboardProvider>
+            <StatusBar style={colorScheme === 'dark' ? 'light' : 'dark'} />
+            <ChatInfoContext.Provider value={{ chatSession, setChatSession }}>
+              <DrawerContext.Provider value={{ isOpen, setOpen, setChatList, chatList }}>
+                <Drawer
+                  drawerStyle={{
+                    flex: 1,
+                    backgroundColor: colorScheme === 'dark' ? '#1f2937' : '#ffffff',
+                  }}
+                  open={isOpen}
+                  onOpen={() => setOpen(true)}
+                  onClose={() => setOpen(false)}
+                  drawerPosition="left"
+                  drawerType="slide"
+                  swipeEdgeWidth={SCREEN_WIDTH}
+                  renderDrawerContent={drawerContent}>
+                  <Stack />
+                  <Toaster />
+                </Drawer>
+                <PortalHost />
+              </DrawerContext.Provider>
+            </ChatInfoContext.Provider>
+          </KeyboardProvider>
         </GestureHandlerRootView>
       </SafeAreaProvider>
     </ThemeProvider>

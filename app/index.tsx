@@ -7,7 +7,6 @@ import {
   Image,
   type ImageStyle,
   Keyboard,
-  KeyboardAvoidingView,
   LayoutAnimation,
   Platform,
   TextInput,
@@ -27,16 +26,11 @@ import { useChatInfoContext } from '@/lib/context/chatInfoCntext';
 import { Message } from '@/lib/type/mesage';
 import * as Progress from 'react-native-progress';
 import { SCREEN_WIDTH } from '@/lib/constant/screenInfo';
-import { Popover, PopoverContent, PopoverTrigger } from '@/components/ui/popover';
-import { Label } from '@/components/ui/label';
 import { CirclePlus, FileUp } from 'lucide-react-native';
-import { Icon } from '@/components/ui/icon';
-
+import { KeyboardStickyView } from 'react-native-keyboard-controller';
 import { toast } from 'sonner-native';
-import { uploadRagFile } from '@/lib/api/uploadFile';
 import { stringToPositiveIntId } from '@/lib/utils';
 import { createMarkdownRules } from '@/lib/config/mardownRules';
-import { SUPPORTED_TYPES } from '@/lib/config/supportedTypes';
 import { UploadWindow } from '@/components/uploadWindow';
 import { DataManagerWindow } from '@/components/dataManagerWindow';
 
@@ -140,10 +134,7 @@ export default function Screen() {
   }, [messageRef.current]);
 
   return (
-    <KeyboardAvoidingView
-      style={{ flex: 1, paddingBottom: insets.bottom }}
-      behavior={"height"}
-      keyboardVerticalOffset={Platform.OS === 'ios' ? 64 : 0}>
+    <View style={{ flex: 1 }}>
       <WindowContext.Provider
         value={{
           uploadWindowOpen,
@@ -154,7 +145,7 @@ export default function Screen() {
           setDataManagerWindowOpen,
           ragDocs,
           setRagDocs,
-          reqeustInfo
+          reqeustInfo,
         }}>
         <Stack.Screen
           options={{
@@ -222,174 +213,176 @@ export default function Screen() {
             </View>
           </ScrollView>
         )}
-        <View className="w-full flex-col gap-4 border-t border-border px-4 py-4">
-          <Input
-            multiline
-            numberOfLines={4}
-            className="h-24 py-3"
-            textAlignVertical="top"
-            placeholder="请输入内容"
-            ref={inputRef}
-            onChangeText={(text) => {
-              inputValueRef.current = text;
-            }}
-          />
-          <View className="flex flex-row">
-            <Button
-              variant="ghost"
-              size="icon"
-              disabled={!chatSession}
-              className="mr-5 flex-1"
-              onPress={() => {
-                setDataManagerWindowOpen(true);
-                Keyboard.dismiss();
-              }}>
-              <FileUp color={colorScheme != 'dark' ? '#171717' : '#ffffff'} />
-            </Button>
+        <KeyboardStickyView offset={{ closed: 0, opened: insets.bottom }}>
+          <View className="w-full flex-col gap-4 border-t border-border px-4 py-4">
+            <Input
+              multiline
+              numberOfLines={4}
+              className="h-24 py-3"
+              textAlignVertical="top"
+              placeholder="请输入内容"
+              ref={inputRef}
+              onChangeText={(text) => {
+                inputValueRef.current = text;
+              }}
+            />
+            <View className="flex flex-row">
+              <Button
+                variant="ghost"
+                size="icon"
+                disabled={!chatSession}
+                className="mr-5 flex-1"
+                onPress={() => {
+                  setDataManagerWindowOpen(true);
+                  Keyboard.dismiss();
+                }}>
+                <FileUp color={colorScheme != 'dark' ? '#171717' : '#ffffff'} />
+              </Button>
 
-            <Button
-              className="flex-[4]"
-              onPress={() => {
-                if (reqeustInfo.isRequesting) {
-                  controller.current.abort();
+              <Button
+                className="flex-[4]"
+                onPress={() => {
+                  if (reqeustInfo.isRequesting) {
+                    controller.current.abort();
+                    setMessages((prev) => [
+                      ...prev,
+                      {
+                        role: 'assistant',
+                        content: messageRef.current,
+                      },
+                    ]);
+                    setMessage('');
+                    messageRef.current = '';
+                    handleStopRequesting();
+                    return;
+                  }
+                  processedLengthRef.current = 0;
+                  if (!inputValueRef.current.length) return;
+                  //发送后存储消息,失败回退
+                  var session = chatSession;
+                  if (!session) {
+                    session = {
+                      sessionId: Date.now().toString(36) + Math.random().toString(36).substring(2),
+                      sessionName:
+                        inputValueRef.current.replaceAll('\n', '').length > 5
+                          ? inputValueRef.current.replaceAll('\n', '').slice(0, 5) + '...'
+                          : inputValueRef.current.replaceAll('\n', ''),
+                      createTime: new Date(),
+                      lastChat: new Date(),
+                    };
+                    setChatSession((prev) => session);
+                    setChatList([...(chatList || []), session]);
+                  } else {
+                    session.lastChat = new Date();
+                    setChatList((prev) =>
+                      prev.map((item) =>
+                        item.sessionId === session.sessionId
+                          ? { ...item, lastChat: new Date() }
+                          : item
+                      )
+                    );
+                  }
+                  setReqeustInfo((prev) => {
+                    return { isRequesting: true, requestMsg: '正在请求中...' };
+                  });
+                  const userInput = inputValueRef.current;
                   setMessages((prev) => [
                     ...prev,
                     {
-                      role: 'assistant',
-                      content: messageRef.current,
+                      role: 'user',
+                      content: userInput,
                     },
                   ]);
-                  setMessage('');
-                  messageRef.current = '';
-                  handleStopRequesting();
-                  return;
-                }
-                processedLengthRef.current = 0;
-                if (!inputValueRef.current.length) return;
-                //发送后存储消息,失败回退
-                var session = chatSession;
-                if (!session) {
-                  session = {
-                    sessionId: Date.now().toString(36) + Math.random().toString(36).substring(2),
-                    sessionName:
-                      inputValueRef.current.replaceAll('\n', '').length > 5
-                        ? inputValueRef.current.replaceAll('\n', '').slice(0, 5) + '...'
-                        : inputValueRef.current.replaceAll('\n', ''),
-                    createTime: new Date(),
-                    lastChat: new Date(),
-                  };
-                  setChatSession((prev) => session);
-                  setChatList([...(chatList || []), session]);
-                } else {
-                  session.lastChat = new Date();
-                  setChatList((prev) =>
-                    prev.map((item) =>
-                      item.sessionId === session.sessionId
-                        ? { ...item, lastChat: new Date() }
-                        : item
-                    )
-                  );
-                }
-                setReqeustInfo((prev) => {
-                  return { isRequesting: true, requestMsg: '正在请求中...' };
-                });
-                const userInput = inputValueRef.current;
-                setMessages((prev) => [
-                  ...prev,
-                  {
-                    role: 'user',
-                    content: userInput,
-                  },
-                ]);
-                axios
-                  .post(
-                    'https://api.ragapp.linc.work/rag/chat',
-                    {
-                      question: userInput,
-                      mode: 'hybrid',
-                      history: [...messages],
-                      document_ids:
-                        ragDocs.filter((item) => item.isChecked).map((item) => item.id) || [],
-                      top_k: 10,
-                    },
-                    {
-                      signal: controller.current.signal,
-                      headers: {
-                        'X-User-ID': stringToPositiveIntId(session.sessionId),
+                  axios
+                    .post(
+                      'https://api.ragapp.linc.work/rag/chat',
+                      {
+                        question: userInput,
+                        mode: 'hybrid',
+                        history: [...messages],
+                        document_ids:
+                          ragDocs.filter((item) => item.isChecked).map((item) => item.id) || [],
+                        top_k: 10,
                       },
-                      responseType: 'stream',
-                      onDownloadProgress: (progressEvent) => {
-                        if (!processedLengthRef.current)
-                          setReqeustInfo((prev) => {
-                            return { isRequesting: true, requestMsg: '正在思索中...' };
-                          });
-                        const text = progressEvent.event.target.response;
-                        const newText = text.slice(processedLengthRef.current);
-                        processedLengthRef.current = text.length;
-                        const lines = newText.split('\n\n');
-                        for (const line of lines) {
-                          if (line.startsWith('data: ')) {
-                            const payload = line.replace('data: ', '').trim();
-                            if (payload === '[DONE]') {
-                              const fullContent = messageRef.current;
-                              setMessages((prev) => [
-                                ...prev,
-                                {
-                                  role: 'assistant',
-                                  content: fullContent,
-                                },
-                              ]);
-                              setMessage('');
-                              messageRef.current = '';
-                              handleStopRequesting();
-                            } else if (payload) {
-                              try {
-                                const data = JSON.parse(payload);
-                                if (data.body) {
-                                  toast.error(data.body.message);
-                                  setMessage('');
-                                  messageRef.current = '';
-                                  handleStopRequesting();
+                      {
+                        signal: controller.current.signal,
+                        headers: {
+                          'X-User-ID': stringToPositiveIntId(session.sessionId),
+                        },
+                        responseType: 'stream',
+                        onDownloadProgress: (progressEvent) => {
+                          if (!processedLengthRef.current)
+                            setReqeustInfo((prev) => {
+                              return { isRequesting: true, requestMsg: '正在思索中...' };
+                            });
+                          const text = progressEvent.event.target.response;
+                          const newText = text.slice(processedLengthRef.current);
+                          processedLengthRef.current = text.length;
+                          const lines = newText.split('\n\n');
+                          for (const line of lines) {
+                            if (line.startsWith('data: ')) {
+                              const payload = line.replace('data: ', '').trim();
+                              if (payload === '[DONE]') {
+                                const fullContent = messageRef.current;
+                                setMessages((prev) => [
+                                  ...prev,
+                                  {
+                                    role: 'assistant',
+                                    content: fullContent,
+                                  },
+                                ]);
+                                setMessage('');
+                                messageRef.current = '';
+                                handleStopRequesting();
+                              } else if (payload) {
+                                try {
+                                  const data = JSON.parse(payload);
+                                  if (data.body) {
+                                    toast.error(data.body.message);
+                                    setMessage('');
+                                    messageRef.current = '';
+                                    handleStopRequesting();
+                                  }
+                                  messageRef.current += data.content;
+                                  setMessage((prev) => prev + data.content);
+                                } catch (e) {
+                                  console.error('JSON parse error:', e);
                                 }
-                                messageRef.current += data.content;
-                                setMessage((prev) => prev + data.content);
-                              } catch (e) {
-                                console.error('JSON parse error:', e);
                               }
                             }
                           }
-                        }
-                      },
-                    }
-                  )
-                  .catch((err) => {
-                    if (axios.isAxiosError(err)) {
-                      console.log('AxiosError:', {
-                        message: err.message,
-                        code: err.code,
-                        status: err.response?.status,
-                        statusText: err.response?.statusText,
-                        data: err.response?.data,
-                        url: err.config?.url,
-                        method: err.config?.method,
-                        headers: err.response?.headers,
-                      });
+                        },
+                      }
+                    )
+                    .catch((err) => {
+                      if (axios.isAxiosError(err)) {
+                        console.log('AxiosError:', {
+                          message: err.message,
+                          code: err.code,
+                          status: err.response?.status,
+                          statusText: err.response?.statusText,
+                          data: err.response?.data,
+                          url: err.config?.url,
+                          method: err.config?.method,
+                          headers: err.response?.headers,
+                        });
 
-                      toast.error(err.response?.data?.message || err.message || '请求失败');
-                    } else {
-                      console.log('未知错误:', err);
-                      toast.error('未知错误');
-                    }
-                  });
-                inputValueRef.current = '';
-                inputRef.current?.clear();
-              }}>
-              <Text>{reqeustInfo.isRequesting ? '停止生成' : '发送'}</Text>
-            </Button>
+                        toast.error(err.response?.data?.message || err.message || '请求失败');
+                      } else {
+                        console.log('未知错误:', err);
+                        toast.error('未知错误');
+                      }
+                    });
+                  inputValueRef.current = '';
+                  inputRef.current?.clear();
+                }}>
+                <Text>{reqeustInfo.isRequesting ? '停止生成' : '发送'}</Text>
+              </Button>
+            </View>
           </View>
-        </View>
+        </KeyboardStickyView>
       </WindowContext.Provider>
-    </KeyboardAvoidingView>
+    </View>
   );
 }
 export enum UploadStatus {
